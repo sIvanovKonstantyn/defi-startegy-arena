@@ -6,6 +6,8 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
+import com.defistrategyarena.shared.http.handlers.BaseHandler;
+import com.defistrategyarena.shared.infra.http.HttpHandler;
 import com.defistrategyarena.shared.infra.http.HttpServerBootstrap;
 import com.defistrategyarena.shared.kernel.ArchitectureCatalog;
 import com.defistrategyarena.shared.messaging.DomainEventListener;
@@ -230,6 +232,19 @@ class ArchitectureRulesTest {
                     .resideInAPackage(SHARED_INFRA)
                     .allowEmptyShould(true)
                     .because("HttpServerBootstrap implementations belong in shared.infra");
+
+    @ArchTest
+    static final ArchRule http_handlers_must_extend_base_handler =
+            classes()
+                    .that()
+                    .implement(HttpHandler.class)
+                    .and()
+                    .doNotHaveFullyQualifiedName(BaseHandler.class.getName())
+                    .should()
+                    .beAssignableTo(BaseHandler.class)
+                    .allowEmptyShould(true)
+                    .because(
+                            "resource HttpHandler implementations share JSON and error handling via BaseHandler");
 
     @ArchTest
     static final ArchRule hexagonal_layers_must_not_depend_on_shared_infra =

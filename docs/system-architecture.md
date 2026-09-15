@@ -299,6 +299,7 @@ com.defistrategyarena
   shared/
     kernel/
     messaging/       # DomainEvent, DomainEventPublisher, DomainEventListener
+    http/handlers/   # BaseHandler for resource HttpHandler implementations
     infra/           # HTTP runtime adapters (Jetty today; Helidon later)
       http/          # HttpServerBootstrap, HttpRouteRegistry, …
       http/jetty/    # Jetty-only code (confined by ArchUnit)
