@@ -17,5 +17,12 @@ public record CreateStrategyHttpRequest(String ownerId, String name, List<RuleBo
         return new CreateStrategyHttpRequest(draft.ownerId(), draft.name(), draft.rules());
     }
 
-    public record RuleBody(String id, String type, String instrument, String threshold) {}
+    public record RuleBody(
+            String id,
+            String conditionType,
+            String actionType,
+            String instrument,
+            String indicator,
+            String threshold,
+            String allocationPercent) {}
 }

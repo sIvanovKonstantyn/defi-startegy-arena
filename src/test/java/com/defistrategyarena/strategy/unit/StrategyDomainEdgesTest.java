@@ -60,4 +60,26 @@ class StrategyDomainEdgesTest {
                 IllegalArgumentException.class,
                 () -> Strategy.create(new Strategy.CreateStrategyData(null, new StrategyDefinition("n", List.of()))));
     }
+
+    @Test
+    void buy_rejects_blank_allocation() {
+        assertThrows(
+                IllegalArgumentException.class, () -> new StrategyDefinition.Buy("ETH-USD", " "));
+    }
+
+    @Test
+    void buy_rejects_null_instrument() {
+        assertThrows(IllegalArgumentException.class, () -> new StrategyDefinition.Buy(null, "10"));
+    }
+
+    @Test
+    void sell_rejects_blank_instrument() {
+        assertThrows(IllegalArgumentException.class, () -> new StrategyDefinition.Sell(" ", "10"));
+    }
+
+    @Test
+    void sell_rejects_null_allocation() {
+        assertThrows(
+                IllegalArgumentException.class, () -> new StrategyDefinition.Sell("ETH-USD", null));
+    }
 }
