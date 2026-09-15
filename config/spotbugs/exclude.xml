@@ -4,4 +4,8 @@
         <Class name="com.defistrategyarena.shared.infra.http.jetty.JettyServerStopSupport$StopAttempt"/>
         <Bug pattern="THROWS_METHOD_THROWS_CLAUSE_BASIC_EXCEPTION"/>
     </Match>
+    <Match>
+        <Class name="com.defistrategyarena.strategy.adapter.web.CreateStrategyHttpRequest"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
 </FindBugsFilter>

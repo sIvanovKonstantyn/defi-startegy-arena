@@ -27,10 +27,12 @@ ext {
     set('spotbugsToolVersion', '4.10.3')
     set('findsecbugsVersion', '1.14.0')
     set('jettyVersion', '12.0.16')
+    set('jspecifyVersion', '1.0.0')
 }
 
 dependencies {
     implementation "org.eclipse.jetty:jetty-server:${jettyVersion}"
+    implementation "org.jspecify:jspecify:${jspecifyVersion}"
 
     spotbugsPlugins "com.h3xstream.findsecbugs:findsecbugs-plugin:${findsecbugsVersion}"
 

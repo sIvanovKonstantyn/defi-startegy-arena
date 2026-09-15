@@ -13,7 +13,8 @@ class ApplicationRoutesTest {
     @Test
     void registers_health_route() {
         HttpRouteRegistry routes = ApplicationRoutes.createDefaultRoutes();
-        HttpHandler handler = routes.find(HttpRouteLookup.create(new HttpRouteLookup("GET", "/health")));
+        HttpHandler handler =
+                routes.find(HttpRouteLookup.create(new HttpRouteLookup("GET", "/health"))).orElseThrow();
         assertEquals(200, handler.handle(new HttpRequest("GET", "/health", "")).status());
     }
 

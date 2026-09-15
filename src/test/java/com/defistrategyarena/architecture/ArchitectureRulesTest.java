@@ -1,6 +1,8 @@
 package com.defistrategyarena.architecture;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.constructors;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
@@ -10,6 +12,8 @@ import com.defistrategyarena.shared.messaging.DomainEventListener;
 import com.defistrategyarena.shared.messaging.DomainEventPublisher;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaCodeUnit;
+import com.tngtech.archunit.core.domain.JavaConstructor;
 import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.importer.ImportOption;
@@ -21,6 +25,13 @@ import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import com.tngtech.archunit.library.dependencies.SliceAssignment;
 import com.tngtech.archunit.library.dependencies.SliceIdentifier;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 @AnalyzeClasses(
         packages = ArchitectureCatalog.BASE_PACKAGE,
@@ -254,6 +265,115 @@ class ArchitectureRulesTest {
                     .dependOnClassesThat()
                     .resideInAPackage(SHARED_INFRA)
                     .because("kernel and messaging stay runtime-free; infra is optional wiring");
+
+    @ArchTest
+    static final ArchRule production_types_reside_in_null_marked_packages =
+            classes()
+                    .that()
+                    .resideInAPackage(BASE + "..")
+                    .and()
+                    .areTopLevelClasses()
+                    .and()
+                    .doNotHaveSimpleName("package-info")
+                    .should(resideInNullMarkedPackage())
+                    .because("JSpecify @NullMarked is required so APIs default to non-null");
+
+    @ArchTest
+    static final ArchRule methods_must_not_declare_nullable_inputs_or_outputs =
+            methods()
+                    .that()
+                    .areDeclaredInClassesThat()
+                    .resideInAPackage(BASE + "..")
+                    .and()
+                    .arePublic()
+                    .should(haveNoNullableParametersOrReturnType())
+                    .because("public method parameters and return types must never be @Nullable");
+
+    @ArchTest
+    static final ArchRule constructors_must_not_declare_nullable_parameters =
+            constructors()
+                    .that()
+                    .areDeclaredInClassesThat()
+                    .resideInAPackage(BASE + "..")
+                    .and()
+                    .arePublic()
+                    .should(haveNoNullableParameters())
+                    .because("public constructor parameters must never be @Nullable");
+
+    private static ArchCondition<JavaClass> resideInNullMarkedPackage() {
+        return new ArchCondition<>("reside in a package annotated with @NullMarked") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                boolean marked = item.getPackage().isAnnotatedWith(NullMarked.class);
+                events.add(
+                        new SimpleConditionEvent(
+                                item,
+                                marked,
+                                item.getPackageName() + " must declare @NullMarked in package-info"));
+            }
+        };
+    }
+
+    private static ArchCondition<JavaMethod> haveNoNullableParametersOrReturnType() {
+        return new ArchCondition<>("not use @Nullable on parameters or return type") {
+            @Override
+            public void check(JavaMethod item, ConditionEvents events) {
+                Method reflected = item.reflect();
+                if (reflected.isSynthetic() || reflected.isBridge()) {
+                    return;
+                }
+                checkAnnotatedType(
+                        item, events, reflected.getAnnotatedReturnType(), "return type");
+                Parameter[] parameters = reflected.getParameters();
+                for (int index = 0; index < parameters.length; index++) {
+                    checkAnnotatedType(
+                            item,
+                            events,
+                            parameters[index].getAnnotatedType(),
+                            "parameter " + index);
+                }
+            }
+        };
+    }
+
+    private static ArchCondition<JavaConstructor> haveNoNullableParameters() {
+        return new ArchCondition<>("not use @Nullable on parameters") {
+            @Override
+            public void check(JavaConstructor item, ConditionEvents events) {
+                Constructor<?> reflected = item.reflect();
+                if (reflected.isSynthetic()) {
+                    return;
+                }
+                Parameter[] parameters = reflected.getParameters();
+                for (int index = 0; index < parameters.length; index++) {
+                    checkAnnotatedType(
+                            item,
+                            events,
+                            parameters[index].getAnnotatedType(),
+                            "parameter " + index);
+                }
+            }
+        };
+    }
+
+    private static void checkAnnotatedType(
+            JavaCodeUnit owner, ConditionEvents events, AnnotatedType annotatedType, String where) {
+        boolean nullable = hasNullable(annotatedType.getAnnotations());
+        events.add(
+                new SimpleConditionEvent(
+                        owner,
+                        !nullable,
+                        owner.getFullName() + " " + where + " must not be @Nullable"));
+    }
+
+    private static boolean hasNullable(Annotation[] annotations) {
+        for (Annotation annotation : annotations) {
+            if (annotation.annotationType().equals(Nullable.class)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     private static ArchCondition<JavaClass> haveIdempotentCreateFactory() {
         return new ArchCondition<>(

@@ -374,9 +374,9 @@ src/test/java/…/<context>/
 
 ## 13. Next steps
 
-1. Confirm v1 DSL action/condition catalog (minimal but useful set).
-2. Keep the Gradle / Java 25 skeleton green; add runtime/framework only when chosen.
-3. For the first context slice: draft e2e scenarios → **user approval** → implement frozen tests → implement production code (TDD).
+1. **Phase 1:** approve [`docs/phases/phase-1-strategy-create.md`](./phases/phase-1-strategy-create.md) → freeze `strategy` e2e tests → implement create-private-strategy slice ([flow](./flows/strategy-create.md)).
+2. Confirm remaining v1 DSL action/condition catalog beyond phase-1 `price_above` / `hold`.
+3. Wire Jetty `POST /strategies` at the composition root once adapter e2e is green.
 4. Define market-data snapshot format and one ingestion adapter.
-5. Implement interpreter MVP (buy/sell/hold + price conditions) and one leaderboard metric.
-6. Add privacy, share, and JSON/YAML export before broader protocol actions.
+5. Implement interpreter MVP and one leaderboard metric.
+6. Add privacy/share and JSON/YAML export before broader protocol actions.

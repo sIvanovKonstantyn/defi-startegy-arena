@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -33,8 +34,8 @@ public final class JettyRouteDispatchHandler extends Handler.Abstract {
         String method = request.getMethod();
         String path = Request.getPathInContext(request);
         HttpRouteLookup lookup = HttpRouteLookup.create(new HttpRouteLookup(method, path));
-        HttpHandler handler = routes.find(lookup);
-        if (handler == null) {
+        Optional<HttpHandler> handler = routes.find(lookup);
+        if (handler.isEmpty()) {
             writeResponse(
                     JettyResponseWriteData.create(
                             new JettyResponseWriteData(
@@ -45,7 +46,7 @@ public final class JettyRouteDispatchHandler extends Handler.Abstract {
         }
 
         HttpRequest httpRequest = new HttpRequest(method, path, readBody(request));
-        HttpResponse httpResponse = handler.handle(httpRequest);
+        HttpResponse httpResponse = handler.get().handle(httpRequest);
         writeResponse(
                 JettyResponseWriteData.create(
                         new JettyResponseWriteData(response, callback, httpResponse)));
