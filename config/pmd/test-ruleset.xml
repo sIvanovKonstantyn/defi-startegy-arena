@@ -1,0 +1,84 @@
+<?xml version="1.0"?>
+<ruleset name="DeFi Strategy Arena Test"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>Test rules: still strict on structure; literals relaxed for fixtures.</description>
+
+    <rule ref="category/java/design.xml/CyclomaticComplexity">
+        <properties>
+            <property name="methodReportLevel" value="10"/>
+            <property name="classReportLevel" value="80"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/CognitiveComplexity">
+        <properties>
+            <property name="reportLevel" value="15"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/ExcessiveParameterList">
+        <properties>
+            <property name="minimum" value="6"/>
+        </properties>
+    </rule>
+
+    <rule ref="category/java/codestyle.xml/UnnecessaryImport"/>
+    <rule ref="category/java/codestyle.xml/EmptyControlStatement"/>
+
+    <rule ref="category/java/errorprone.xml/EmptyCatchBlock"/>
+    <rule ref="category/java/errorprone.xml/ReturnFromFinallyBlock"/>
+
+    <rule ref="category/java/bestpractices.xml/UnusedLocalVariable"/>
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateField"/>
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateMethod"/>
+    <rule ref="category/java/bestpractices.xml/UnusedAssignment"/>
+    <rule ref="category/java/bestpractices.xml/UnusedFormalParameter"/>
+    <rule ref="category/java/bestpractices.xml/SystemPrintln"/>
+
+    <rule name="NoCommentsInTests"
+            language="java"
+            message="Comments are forbidden in tests; use descriptive test names instead."
+            class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>Bans comments in test sources; prefer method names that document intent.</description>
+        <priority>2</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+                    //Comment | //FormalComment
+                ]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="NoLombokInTests"
+            language="java"
+            message="Lombok is forbidden."
+            class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>Bans Lombok in tests.</description>
+        <priority>1</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+                    //ImportDeclaration[starts-with(@PackageName, 'lombok')]
+                ]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="NoThreadSleep"
+            language="java"
+            message="Thread.sleep is forbidden in tests; use deterministic waits or fakes."
+            class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>Forbids Thread.sleep in tests.</description>
+        <priority>1</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+                    //MethodCall[@MethodName = 'sleep']
+                ]]></value>
+            </property>
+        </properties>
+    </rule>
+
+</ruleset>

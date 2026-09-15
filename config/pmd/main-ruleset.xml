@@ -1,0 +1,210 @@
+<?xml version="1.0"?>
+<ruleset name="DeFi Strategy Arena Main"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>Strict production rules: complexity, size, no comments, no magic values, no Lombok.</description>
+
+    <rule ref="category/java/design.xml/CyclomaticComplexity">
+        <properties>
+            <property name="methodReportLevel" value="5"/>
+            <property name="classReportLevel" value="40"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/CognitiveComplexity">
+        <properties>
+            <property name="reportLevel" value="8"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/NPathComplexity">
+        <properties>
+            <property name="reportLevel" value="50"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/NcssCount">
+        <properties>
+            <property name="methodReportLevel" value="20"/>
+            <property name="classReportLevel" value="150"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/TooManyMethods">
+        <properties>
+            <property name="maxmethods" value="12"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/TooManyFields">
+        <properties>
+            <property name="maxfields" value="8"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/GodClass"/>
+    <rule ref="category/java/design.xml/SimplifyBooleanExpressions"/>
+    <rule ref="category/java/design.xml/SimplifyBooleanReturns"/>
+    <rule ref="category/java/design.xml/AvoidThrowingRawExceptionTypes"/>
+    <rule ref="category/java/design.xml/CollapsibleIfStatements"/>
+
+    <rule ref="category/java/codestyle.xml/TooManyStaticImports">
+        <properties>
+            <property name="maximumStaticImports" value="4"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/codestyle.xml/UnnecessaryImport"/>
+    <rule ref="category/java/codestyle.xml/UnnecessaryLocalBeforeReturn"/>
+    <rule ref="category/java/codestyle.xml/UnnecessaryModifier"/>
+    <rule ref="category/java/codestyle.xml/UselessParentheses"/>
+    <rule ref="category/java/codestyle.xml/UnnecessaryReturn"/>
+    <rule ref="category/java/codestyle.xml/EmptyControlStatement"/>
+    <rule ref="category/java/codestyle.xml/UseDiamondOperator"/>
+
+    <rule ref="category/java/bestpractices.xml/ForLoopCanBeForeach"/>
+    <rule ref="category/java/bestpractices.xml/UnusedLocalVariable"/>
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateField"/>
+    <rule ref="category/java/bestpractices.xml/UnusedPrivateMethod"/>
+    <rule ref="category/java/bestpractices.xml/UnusedAssignment"/>
+    <rule ref="category/java/bestpractices.xml/UnusedFormalParameter"/>
+    <rule ref="category/java/bestpractices.xml/PrimitiveWrapperInstantiation"/>
+    <rule ref="category/java/bestpractices.xml/SystemPrintln"/>
+
+    <rule ref="category/java/security.xml/HardCodedCryptoKey"/>
+    <rule ref="category/java/security.xml/InsecureCryptoIv"/>
+
+    <rule ref="category/java/errorprone.xml/AvoidDuplicateLiterals">
+        <properties>
+            <property name="maxDuplicateLiterals" value="2"/>
+            <property name="minimumLength" value="2"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/errorprone.xml/AvoidLiteralsInIfCondition">
+        <properties>
+            <property name="ignoreMagicNumbers" value=""/>
+        </properties>
+    </rule>
+    <rule ref="category/java/errorprone.xml/BrokenNullCheck"/>
+    <rule ref="category/java/errorprone.xml/CloseResource"/>
+    <rule ref="category/java/errorprone.xml/EmptyCatchBlock"/>
+    <rule ref="category/java/errorprone.xml/ReturnFromFinallyBlock"/>
+
+    <rule ref="category/java/performance.xml/AvoidInstantiatingObjectsInLoops"/>
+    <rule ref="category/java/performance.xml/UseArrayListInsteadOfVector"/>
+
+    <rule name="NoCommentsInProductionCode"
+            language="java"
+            message="Comments are forbidden in production code; use clear names and structure instead."
+            class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>Bans line, block, and Javadoc comments in main sources.</description>
+        <priority>1</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+                    //Comment | //FormalComment
+                ]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="NoMagicNumbers"
+            language="java"
+            message="Magic number forbidden; extract a named constant. No numeric literals are exempt."
+            class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>
+            Every numeric literal in executable code must be a named constant (field).
+            No exemptions for -1, 0, or 1. Annotations and field initializers of constants are allowed.
+        </description>
+        <priority>1</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+                    //NumericLiteral
+                      [not(ancestor::Annotation)]
+                      [not(ancestor::ArrayDimensions)]
+                      [not(ancestor::FieldDeclaration)]
+                ]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="MethodsTakeAtMostOneDtoParameter"
+            language="java"
+            message="Methods must take at most one parameter, and it must be a DTO (record/type), not a primitive or String."
+            class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>
+            Application and domain methods accept zero or one argument. That argument must be a DTO
+            (typically a record), never a primitive or java.lang.String. Constructors/records may
+            declare multiple components; this rule targets MethodDeclaration only.
+        </description>
+        <priority>1</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+                    //MethodDeclaration
+                      [not(@Abstract = true())]
+                      [FormalParameters[count(FormalParameter) > 1
+                        or FormalParameter[PrimitiveType
+                          or (ClassType[@SimpleName = 'String'
+                              and (not(PackageName) or PackageName/@Image = 'java.lang')])]]]
+                ]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="NoHardcodedStringLiterals"
+            language="java"
+            message="Hardcoded string literal forbidden; extract a named constant."
+            class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>
+            Non-empty string literals in production code must be named constants (fields),
+            except inside annotations.
+        </description>
+        <priority>2</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+                    //StringLiteral
+                      [@Image != '""']
+                      [not(ancestor::Annotation)]
+                      [not(ancestor::FieldDeclaration)]
+                      [string-length(@Image) > 2]
+                ]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="NoLombok"
+            language="java"
+            message="Lombok is forbidden; prefer records or explicit code."
+            class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>Bans Lombok imports.</description>
+        <priority>1</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+                    //ImportDeclaration[contains(@ImportedName, 'lombok')]
+                ]]></value>
+            </property>
+        </properties>
+    </rule>
+
+    <rule name="PreferRecordsForDataCarriers"
+            language="java"
+            message="Anemic getters/setters data carriers are discouraged; prefer records for immutable data."
+            class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>
+            Flags types with several get/set/is methods as a signal to prefer records.
+        </description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+                    //ClassDeclaration
+                      [@Interface = false()]
+                      [not(@Record = true())]
+                      [count(ClassBody/MethodDeclaration[
+                          starts-with(@Name, 'get') or starts-with(@Name, 'set') or starts-with(@Name, 'is')
+                      ]) >= 4]
+                ]]></value>
+            </property>
+        </properties>
+    </rule>
+
+</ruleset>

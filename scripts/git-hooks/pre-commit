@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$ROOT"
+
+branch="$(git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")"
+
+if [[ -z "${branch}" || "${branch}" == "HEAD" ]]; then
+  echo "[pre-commit] Detached HEAD is not allowed for commits. Check out review/<feature>." >&2
+  exit 1
+fi
+
+commit_count="$(git rev-list --count HEAD 2>/dev/null || true)"
+if [[ -z "${commit_count}" ]]; then
+  commit_count=0
+fi
+
+if [[ "${branch}" == "main" || "${branch}" == "master" ]]; then
+  if [[ "${commit_count}" -gt 0 ]]; then
+    echo "[pre-commit] Commits on '${branch}' are forbidden after the initial commit." >&2
+    echo "[pre-commit] Create a branch: git checkout -b review/<feature_name>" >&2
+    exit 1
+  fi
+  echo "[pre-commit] Allowing initial commit on ${branch}."
+elif [[ ! "${branch}" =~ ^review/[a-z0-9][a-z0-9_-]*$ ]]; then
+  echo "[pre-commit] Invalid branch '${branch}'." >&2
+  echo "[pre-commit] Use: review/<feature_name> (lowercase, digits, _ or -)." >&2
+  echo "[pre-commit] Example: review/arena_submit_flow" >&2
+  exit 1
+fi
+
+echo "[pre-commit] Running ./gradlew qualityCheck..."
+./gradlew qualityCheck --quiet
+echo "[pre-commit] qualityCheck passed."

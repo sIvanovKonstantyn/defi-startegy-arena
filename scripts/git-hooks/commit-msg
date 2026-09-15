@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+msg_file="${1:-}"
+if [[ -z "${msg_file}" || ! -f "${msg_file}" ]]; then
+  echo "[commit-msg] Missing commit message file." >&2
+  exit 1
+fi
+
+# First non-comment, non-empty line is the subject.
+subject="$(grep -v '^#' "${msg_file}" | sed '/^[[:space:]]*$/d' | head -n 1 || true)"
+
+if [[ -z "${subject}" ]]; then
+  echo "[commit-msg] Empty commit message." >&2
+  exit 1
+fi
+
+pattern='^(IDENTITY|STRATEGY|MARKETDATA|ARENA|LEADERBOARD|SHARED|DOCS|BUILD|ARCH) \| .+$'
+
+if [[ ! "${subject}" =~ ${pattern} ]]; then
+  echo "[commit-msg] Invalid commit subject:" >&2
+  echo "  ${subject}" >&2
+  echo "[commit-msg] Required: CONTEXT | message" >&2
+  echo "[commit-msg] CONTEXT one of: IDENTITY, STRATEGY, MARKETDATA, ARENA, LEADERBOARD, SHARED, DOCS, BUILD, ARCH" >&2
+  echo "[commit-msg] Example: ARENA | add submission validation" >&2
+  exit 1
+fi
