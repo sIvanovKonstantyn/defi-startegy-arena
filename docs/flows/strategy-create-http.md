@@ -7,7 +7,7 @@ Accept `POST /strategies` JSON at the Jetty edge, map to `StrategyRestAdapter`, 
 ## Actors
 
 - `bootstrap.ApplicationRoutes` / `CreateStrategyHttpHandler`
-- `shared.http.handlers.BaseHandler` (JSON read/write + bad-request template)
+- `shared.http.handlers.BaseHandler` (generic JSON read/execute/write + bad-request body)
 - `bootstrap.ApplicationComposition`
 - `strategy.adapter.web.StrategyRestAdapter`
 - `shared.infra.http` + Jetty bootstrap
@@ -37,10 +37,10 @@ sequenceDiagram
 ## Walkthrough
 
 1. Composition root builds `ApplicationComposition` (repo, publisher, adapter).
-2. `ApplicationRoutes` registers `POST /strategies` to `CreateStrategyHttpHandler` (extends `BaseHandler`).
-3. `BaseHandler` deserializes JSON with Jackson into `CreateStrategyHttpRequest`; invalid JSON maps to `400`.
-4. Handler calls `StrategyRestAdapter.create` (phase-1 behavior unchanged).
-5. `BaseHandler` serializes `CreateStrategyHttpResponse` and returns status + `application/json`.
+2. `ApplicationRoutes` registers `POST /strategies` to `CreateStrategyHttpHandler` (extends `BaseHandler<Req,Res>`).
+3. `BaseHandler` deserializes JSON into `CreateStrategyHttpRequest`; on failure it serializes `badRequestBody()`.
+4. Handler `execute` delegates to `StrategyRestAdapter.create` (phase-1 behavior unchanged).
+5. `BaseHandler` serializes the `JsonHttpResult` and returns its `status` + `application/json`.
 
 ## Errors / edge cases
 

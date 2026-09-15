@@ -1,6 +1,8 @@
 package com.defistrategyarena.strategy.adapter.web;
 
-public record CreateStrategyHttpResponse(int status, String strategyId) {
+import com.defistrategyarena.shared.http.JsonHttpResult;
+
+public record CreateStrategyHttpResponse(int status, String strategyId) implements JsonHttpResult {
 
     public static CreateStrategyHttpResponse create(CreateStrategyHttpResponse draft) {
         return new CreateStrategyHttpResponse(draft.status(), draft.strategyId());
