@@ -9,9 +9,8 @@ import org.junit.jupiter.api.Test;
 class HttpResponseTest {
 
     @Test
-    void normalizes_null_body_to_empty() {
-        HttpResponse response = HttpResponse.create(new HttpResponse(200, "text/plain", null));
-        assertEquals("", response.body());
+    void rejects_null_body() {
+        assertThrows(IllegalArgumentException.class, () -> new HttpResponse(200, "text/plain", null));
     }
 
     @Test
@@ -22,5 +21,11 @@ class HttpResponseTest {
     @Test
     void rejects_null_content_type() {
         assertThrows(IllegalArgumentException.class, () -> new HttpResponse(200, null, "ok"));
+    }
+
+    @Test
+    void create_copies_valid_response() {
+        HttpResponse response = HttpResponse.create(new HttpResponse(200, "text/plain", "ok"));
+        assertEquals("ok", response.body());
     }
 }

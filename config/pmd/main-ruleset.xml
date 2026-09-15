@@ -170,6 +170,23 @@
         </properties>
     </rule>
 
+    <rule name="NoReturnNull"
+            language="java"
+            message="Returning null is forbidden; use Optional, a failure type, or throw."
+            class="net.sourceforge.pmd.lang.rule.xpath.XPathRule">
+        <description>
+            Production methods must not return null. Prefer Optional for absence under @NullMarked packages.
+        </description>
+        <priority>1</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+                    //ReturnStatement/Expression/PrimaryExpression/PrimaryPrefix/Literal/NullLiteral
+                ]]></value>
+            </property>
+        </properties>
+    </rule>
+
     <rule name="NoLombok"
             language="java"
             message="Lombok is forbidden; prefer records or explicit code."

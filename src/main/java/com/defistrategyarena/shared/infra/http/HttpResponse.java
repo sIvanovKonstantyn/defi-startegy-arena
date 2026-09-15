@@ -3,13 +3,14 @@ package com.defistrategyarena.shared.infra.http;
 public record HttpResponse(int status, String contentType, String body) {
 
     private static final String CONTENT_TYPE_REQUIRED = "content type must not be blank";
+    private static final String BODY_REQUIRED = "body must not be null";
 
     public HttpResponse {
         if (contentType == null || contentType.isBlank()) {
             throw new IllegalArgumentException(CONTENT_TYPE_REQUIRED);
         }
         if (body == null) {
-            body = "";
+            throw new IllegalArgumentException(BODY_REQUIRED);
         }
     }
 

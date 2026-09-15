@@ -3,6 +3,7 @@ package com.defistrategyarena.shared.infra.http;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 public final class InMemoryHttpRouteRegistry implements HttpRouteRegistry {
 
@@ -15,9 +16,9 @@ public final class InMemoryHttpRouteRegistry implements HttpRouteRegistry {
     }
 
     @Override
-    public HttpHandler find(HttpRouteLookup lookup) {
+    public Optional<HttpHandler> find(HttpRouteLookup lookup) {
         RouteKey key = RouteKey.create(new RouteKeyData(lookup.method(), lookup.path()));
-        return routes.get(key);
+        return Optional.ofNullable(routes.get(key));
     }
 
     private record RouteKey(String method, String path) {

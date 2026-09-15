@@ -313,3 +313,5 @@ E2E talks to the **REST input adapter** (HTTP-shaped DTOs) with in-memory outbou
 3. Should `ownerId` be a proper `identity` type in `shared`, or stay a string until Identity context exists?
 
 If this shape feels right, the next step is an approved e2e scenario list for `strategy` (or `arena`) and then real implementation under TDD.
+
+**Phase 1 approval package:** [`docs/phases/phase-1-strategy-create.md`](../phases/phase-1-strategy-create.md) · flow: [`docs/flows/strategy-create.md`](../flows/strategy-create.md).

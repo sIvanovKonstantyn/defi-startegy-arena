@@ -4,6 +4,8 @@ Illustrative only (not production code). Runtime/framework is still TBD — the 
 
 Context-level e2e = **enter through `adapter.web`**, wire in-memory persistence + a test event bus, assert HTTP-shaped response + side effects.
 
+**Phase 1 scenarios (approval):** [`docs/phases/phase-1-strategy-create.md`](../phases/phase-1-strategy-create.md).
+
 ---
 
 ## Request / response at the edge
@@ -92,6 +94,7 @@ Enters **only** via the REST adapter — not by calling `CreateStrategy` directl
 package com.defistrategyarena.strategy.e2e;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.defistrategyarena.shared.events.strategy.StrategyVersionPublished;
@@ -111,6 +114,7 @@ import org.junit.jupiter.api.Test;
 class CreateStrategyE2ETest {
 
     private static final int STATUS_CREATED = 201;
+    private static final int STATUS_CONFLICT = 409;
     private static final String OWNER_ID = "user-42";
     private static final String STRATEGY_NAME = "rsi-bounce";
 
@@ -141,21 +145,29 @@ class CreateStrategyE2ETest {
 
         assertEquals(STATUS_CREATED, response.status());
         StrategyId id = new StrategyId(response.strategyId());
+        assertNotNull(strategies.get(id));
         assertEquals(OWNER_ID, strategies.get(id).ownerId());
         assertEquals(STRATEGY_NAME, strategies.get(id).current().definition().name());
+        assertEquals(Privacy.PRIVATE, strategies.get(id).privacy());
+        assertEquals(1, strategies.get(id).current().number());
         assertTrue(
                 events.published().stream().anyMatch(StrategyVersionPublished.class::isInstance));
     }
 
     @Test
-    void same_owner_and_name_yield_same_strategy_id() {
+    void rejects_duplicate_owner_and_name() {
         CreateStrategyHttpRequest request =
                 new CreateStrategyHttpRequest(OWNER_ID, STRATEGY_NAME, List.of());
 
-        String first = http.create(request).strategyId();
-        String second = http.create(request).strategyId();
+        CreateStrategyHttpResponse first = http.create(request);
+        CreateStrategyHttpResponse second = http.create(request);
 
-        assertEquals(first, second);
+        assertEquals(STATUS_CREATED, first.status());
+        assertNotNull(strategies.get(new StrategyId(first.strategyId())));
+        assertEquals(STATUS_CONFLICT, second.status());
+        assertEquals(1, strategies.countByOwnerAndName(OWNER_ID, STRATEGY_NAME));
+        assertEquals(first.strategyId(), strategies.findByOwnerAndName(OWNER_ID, STRATEGY_NAME).id().value());
+        assertTrue(events.published().stream().filter(StrategyVersionPublished.class::isInstance).count() == 1L);
     }
 
     private static final class RecordingEventPublisher implements DomainEventPublisher {
@@ -205,6 +217,7 @@ sequenceDiagram
 | Context boundary through **REST adapter** | Full browser / Playwright |
 | Real application + domain wiring | Unit test of mapper only |
 | In-memory outbound adapters | Real DB / message broker |
+| **Asserts persistence** via repository after create | Response-only smoke checks |
 | Frozen after user approval | Edited to green the build |
 
 Unit tests still cover edge cases (invalid DSL, privacy transitions) without going through HTTP DTOs.

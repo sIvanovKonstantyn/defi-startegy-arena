@@ -1,0 +1,63 @@
+package com.defistrategyarena.strategy.unit;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import com.defistrategyarena.strategy.domain.Privacy;
+import com.defistrategyarena.strategy.domain.Strategy;
+import com.defistrategyarena.strategy.domain.StrategyDefinition;
+import com.defistrategyarena.strategy.domain.StrategyId;
+import com.defistrategyarena.strategy.domain.StrategyVersion;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+
+class StrategyDomainEdgesTest {
+
+    private static final int VERSION_TWO = 2;
+
+    @Test
+    void strategy_id_rejects_blank() {
+        assertThrows(IllegalArgumentException.class, () -> new StrategyId(" "));
+    }
+
+    @Test
+    void strategy_id_rejects_null() {
+        assertThrows(IllegalArgumentException.class, () -> new StrategyId(null));
+    }
+
+    @Test
+    void strategy_version_create_copies_draft() {
+        StrategyDefinition definition = new StrategyDefinition("n", List.of());
+        StrategyVersion version =
+                StrategyVersion.create(new StrategyVersion(VERSION_TWO, definition));
+        assertEquals(VERSION_TWO, version.number());
+        assertEquals(definition, version.definition());
+    }
+
+    @Test
+    void strategy_version_rejects_null_definition() {
+        assertThrows(IllegalArgumentException.class, () -> new StrategyVersion(VERSION_TWO, null));
+    }
+
+    @Test
+    void privacy_catalog_includes_shared() {
+        assertEquals(Privacy.SHARED, Privacy.valueOf("SHARED"));
+    }
+
+    @Test
+    void strategy_definition_rejects_null_rules() {
+        assertThrows(IllegalArgumentException.class, () -> new StrategyDefinition("n", null));
+    }
+
+    @Test
+    void strategy_definition_rejects_null_name() {
+        assertThrows(IllegalArgumentException.class, () -> new StrategyDefinition(null, List.of()));
+    }
+
+    @Test
+    void strategy_create_rejects_null_owner() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> Strategy.create(new Strategy.CreateStrategyData(null, new StrategyDefinition("n", List.of()))));
+    }
+}

@@ -72,6 +72,7 @@ ArchUnit encodes architectural constraints as unit tests (typically under `src/t
 - Naming and placement conventions (controllers only in `..adapter.web..`, repositories only in `..adapter.persistence..`)
 - Forbidden dependencies (no frameworks in domain, no JDBC outside adapters, etc.)
 - **HTTP infra isolation:** Jetty/Helidon only in `shared.infra..`; `HttpServerBootstrap` implementations in `shared.infra..`; hexagonal layers must not depend on `shared.infra`; composition root selects bootstrap, never server libraries directly (see [http-server-bootstrap flow](./flows/http-server-bootstrap.md))
+- **Nullness:** JSpecify `@NullMarked` on every production package; public parameters/returns must not be `@Nullable`; PMD forbids `return null` — use `Optional` for absence
 
 ArchUnit complements PMD: PMD judges *local* code shape; ArchUnit judges *global* structure.
 
