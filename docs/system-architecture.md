@@ -378,6 +378,7 @@ src/test/java/…/<context>/
 1. ~~**Phase 1:** create-private-strategy slice~~ — done ([phase-1](./phases/phase-1-strategy-create.md)).
 2. ~~**Phase 2:** Jetty `POST /strategies`~~ — done ([phase-2](./phases/phase-2-jetty-create-strategy.md), [flow](./flows/strategy-create-http.md)).
 3. ~~**Phase 3:** V1 DSL condition/action catalog~~ — done ([phase-3](./phases/phase-3-dsl-catalog.md), [flow](./flows/strategy-dsl-catalog.md)).
-4. Define market-data snapshot format and one ingestion adapter.
-5. Implement interpreter MVP and one leaderboard metric.
-6. Add privacy/share and JSON/YAML export before broader protocol actions.
+4. ~~**Phase 4:** list/get strategies (paginated)~~ — done ([phase-4](./phases/phase-4-strategy-reads.md), [flow](./flows/strategy-reads.md)).
+5. Define market-data snapshot format and one ingestion adapter.
+6. Implement interpreter MVP and one leaderboard metric.
+7. Add privacy/share and JSON/YAML export before broader protocol actions.

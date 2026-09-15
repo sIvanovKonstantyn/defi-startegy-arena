@@ -8,14 +8,6 @@ import java.util.function.Function;
 enum CreateStrategyRuleMapper {
     ;
 
-    private static final String EMPTY = "";
-    private static final String CONDITION_PRICE_ABOVE = "price_above";
-    private static final String CONDITION_PRICE_UNDER = "price_under";
-    private static final String CONDITION_INDICATOR_BELOW = "indicator_below";
-    private static final String CONDITION_INDICATOR_ABOVE = "indicator_above";
-    private static final String ACTION_HOLD = "hold";
-    private static final String ACTION_BUY = "buy";
-    private static final String ACTION_SELL = "sell";
     private static final String UNKNOWN_CONDITION_TYPE = "unknown condition type";
     private static final String UNKNOWN_ACTION_TYPE = "unknown action type";
     private static final String ALLOCATION_REQUIRED = "allocation percent must not be blank";
@@ -24,17 +16,17 @@ enum CreateStrategyRuleMapper {
     private static final Map<String, Function<CreateStrategyHttpRequest.RuleBody, StrategyDefinition.Condition>>
             CONDITIONS =
                     Map.of(
-                            CONDITION_PRICE_ABOVE, CreateStrategyRuleMapper::priceAbove,
-                            CONDITION_PRICE_UNDER, CreateStrategyRuleMapper::priceUnder,
-                            CONDITION_INDICATOR_BELOW, CreateStrategyRuleMapper::indicatorBelow,
-                            CONDITION_INDICATOR_ABOVE, CreateStrategyRuleMapper::indicatorAbove);
+                            StrategyDslWireNames.CONDITION_PRICE_ABOVE, CreateStrategyRuleMapper::priceAbove,
+                            StrategyDslWireNames.CONDITION_PRICE_UNDER, CreateStrategyRuleMapper::priceUnder,
+                            StrategyDslWireNames.CONDITION_INDICATOR_BELOW, CreateStrategyRuleMapper::indicatorBelow,
+                            StrategyDslWireNames.CONDITION_INDICATOR_ABOVE, CreateStrategyRuleMapper::indicatorAbove);
 
     private static final Map<String, Function<CreateStrategyHttpRequest.RuleBody, StrategyDefinition.Action>>
             ACTIONS =
                     Map.of(
-                            ACTION_HOLD, CreateStrategyRuleMapper::hold,
-                            ACTION_BUY, CreateStrategyRuleMapper::buy,
-                            ACTION_SELL, CreateStrategyRuleMapper::sell);
+                            StrategyDslWireNames.ACTION_HOLD, CreateStrategyRuleMapper::hold,
+                            StrategyDslWireNames.ACTION_BUY, CreateStrategyRuleMapper::buy,
+                            StrategyDslWireNames.ACTION_SELL, CreateStrategyRuleMapper::sell);
 
     static StrategyDefinition.Rule toRule(CreateStrategyHttpRequest.RuleBody body) {
         return new StrategyDefinition.Rule(body.id(), toCondition(body), toAction(body));
@@ -116,7 +108,7 @@ enum CreateStrategyRuleMapper {
 
         private String orEmpty() {
             if (value == null) {
-                return EMPTY;
+                return StrategyDslWireNames.EMPTY;
             }
             return value;
         }

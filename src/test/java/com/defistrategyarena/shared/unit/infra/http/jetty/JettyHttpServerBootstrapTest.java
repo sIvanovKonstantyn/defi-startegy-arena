@@ -45,6 +45,14 @@ class JettyHttpServerBootstrapTest {
             String echoResponse = client.send(echoRequest, BodyHandlers.ofString()).body();
             assertEquals(ECHO_BODY, echoResponse);
 
+            URI emptyQueryUri = URI.create("http://localhost:" + runtime.port() + PATH_ECHO + "?");
+            int emptyQueryStatus =
+                    client.send(
+                                    java.net.http.HttpRequest.newBuilder(emptyQueryUri).GET().build(),
+                                    BodyHandlers.ofString())
+                            .statusCode();
+            assertEquals(STATUS_OK, emptyQueryStatus);
+
             URI missingUri = URI.create("http://localhost:" + runtime.port() + "/missing");
             Builder missingBuilder = java.net.http.HttpRequest.newBuilder(missingUri).GET();
             int missingStatus =

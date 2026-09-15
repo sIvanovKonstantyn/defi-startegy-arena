@@ -6,5 +6,5 @@ public interface HttpRouteRegistry {
 
     void register(HttpRouteRegistration registration);
 
-    Optional<HttpHandler> find(HttpRouteLookup lookup);
+    Optional<HttpRouteMatch> find(HttpRouteLookup lookup);
 }

@@ -16,6 +16,7 @@ public enum ApplicationRoutes {
     private static final String METHOD_POST = "POST";
     private static final String PATH_HEALTH = "/health";
     private static final String PATH_STRATEGIES = "/strategies";
+    private static final String PATH_STRATEGY_DETAIL = "/strategies/{strategyId}";
     private static final String PLAIN_TEXT = "text/plain";
     private static final String HEALTH_BODY = "ok";
 
@@ -33,6 +34,14 @@ public enum ApplicationRoutes {
                 HttpRouteRegistration.create(
                         new HttpRouteRegistration(
                                 METHOD_POST, PATH_STRATEGIES, createStrategyHandler(composition))));
+        routes.register(
+                HttpRouteRegistration.create(
+                        new HttpRouteRegistration(
+                                METHOD_GET, PATH_STRATEGIES, listStrategiesHandler(composition))));
+        routes.register(
+                HttpRouteRegistration.create(
+                        new HttpRouteRegistration(
+                                METHOD_GET, PATH_STRATEGY_DETAIL, getStrategyHandler(composition))));
         return routes;
     }
 
@@ -48,5 +57,15 @@ public enum ApplicationRoutes {
     private static HttpHandler createStrategyHandler(ApplicationComposition composition) {
         return new CreateStrategyHttpHandler(
                 new CreateStrategyHttpHandler.CreateStrategyHttpHandlerDeps(composition.strategyHttp()));
+    }
+
+    private static HttpHandler listStrategiesHandler(ApplicationComposition composition) {
+        return new ListStrategiesHttpHandler(
+                new ListStrategiesHttpHandler.ListStrategiesHttpHandlerDeps(composition.strategyHttp()));
+    }
+
+    private static HttpHandler getStrategyHandler(ApplicationComposition composition) {
+        return new GetStrategyHttpHandler(
+                new GetStrategyHttpHandler.GetStrategyHttpHandlerDeps(composition.strategyHttp()));
     }
 }

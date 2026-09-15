@@ -12,6 +12,8 @@ public interface StrategyRepository {
 
     Optional<Strategy> findByOwnerAndName(OwnerStrategyName key);
 
+    StrategyPage listByOwner(ListStrategiesQuery query);
+
     int size();
 
     int countByOwnerAndName(OwnerStrategyName key);

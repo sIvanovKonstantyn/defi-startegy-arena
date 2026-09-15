@@ -4,11 +4,15 @@ import com.defistrategyarena.shared.infra.http.HttpHandler;
 import com.defistrategyarena.shared.infra.http.HttpRequest;
 import com.defistrategyarena.shared.infra.http.HttpResponse;
 import com.defistrategyarena.shared.infra.http.HttpRouteLookup;
+import com.defistrategyarena.shared.infra.http.HttpRouteMatch;
 import com.defistrategyarena.shared.infra.http.HttpRouteRegistry;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Handler;
@@ -21,6 +25,12 @@ public final class JettyRouteDispatchHandler extends Handler.Abstract {
     private static final String CONTENT_TYPE_HEADER = "Content-Type";
     private static final String NOT_FOUND_BODY = "not found";
     private static final String PLAIN_TEXT = "text/plain";
+    private static final String QUERY_PAIR_SEPARATOR = "&";
+    private static final String QUERY_KV_SEPARATOR = "=";
+    private static final String EMPTY_VALUE = "";
+    private static final int INDEX_NOT_FOUND = -1;
+    private static final int VALUE_OFFSET = 1;
+    private static final int NAME_START = 0;
 
     private final HttpRouteRegistry routes;
 
@@ -34,8 +44,8 @@ public final class JettyRouteDispatchHandler extends Handler.Abstract {
         String method = request.getMethod();
         String path = Request.getPathInContext(request);
         HttpRouteLookup lookup = HttpRouteLookup.create(new HttpRouteLookup(method, path));
-        Optional<HttpHandler> handler = routes.find(lookup);
-        if (handler.isEmpty()) {
+        Optional<HttpRouteMatch> match = routes.find(lookup);
+        if (match.isEmpty()) {
             writeResponse(
                     JettyResponseWriteData.create(
                             new JettyResponseWriteData(
@@ -45,8 +55,16 @@ public final class JettyRouteDispatchHandler extends Handler.Abstract {
             return true;
         }
 
-        HttpRequest httpRequest = new HttpRequest(method, path, readBody(request));
-        HttpResponse httpResponse = handler.get().handle(httpRequest);
+        HttpRouteMatch route = match.get();
+        HttpRequest httpRequest =
+                new HttpRequest(
+                        method,
+                        path,
+                        readBody(request),
+                        parseQuery(new RawQuery(request.getHttpURI().getQuery())),
+                        route.pathVariables());
+        HttpHandler handler = route.handler();
+        HttpResponse httpResponse = handler.handle(httpRequest);
         writeResponse(
                 JettyResponseWriteData.create(
                         new JettyResponseWriteData(response, callback, httpResponse)));
@@ -59,6 +77,38 @@ public final class JettyRouteDispatchHandler extends Handler.Abstract {
         }
     }
 
+    private static Map<String, String> parseQuery(RawQuery rawQuery) {
+        return parseQueryString(rawQuery);
+    }
+
+    @SuppressWarnings("PMD.AvoidInstantiatingObjectsInLoops")
+    static Map<String, String> parseQueryString(RawQuery rawQuery) {
+        String raw = rawQuery.value();
+        if (raw == null || raw.isBlank()) {
+            return Map.of();
+        }
+        Map<String, String> query = new LinkedHashMap<>();
+        for (String pair : raw.split(QUERY_PAIR_SEPARATOR)) {
+            putPair(new QueryPair(pair, query));
+        }
+        return Map.copyOf(query);
+    }
+
+    private static void putPair(QueryPair pair) {
+        int separator = pair.raw().indexOf(QUERY_KV_SEPARATOR);
+        if (separator == INDEX_NOT_FOUND) {
+            pair.query().put(decode(new EncodedText(pair.raw())), EMPTY_VALUE);
+            return;
+        }
+        String name = decode(new EncodedText(pair.raw().substring(NAME_START, separator)));
+        String value = decode(new EncodedText(pair.raw().substring(separator + VALUE_OFFSET)));
+        pair.query().put(name, value);
+    }
+
+    private static String decode(EncodedText text) {
+        return URLDecoder.decode(text.value(), StandardCharsets.UTF_8);
+    }
+
     private static void writeResponse(JettyResponseWriteData writeData) {
         Response response = writeData.response();
         Callback callback = writeData.callback();
@@ -68,4 +118,10 @@ public final class JettyRouteDispatchHandler extends Handler.Abstract {
         byte[] payload = httpResponse.body().getBytes(StandardCharsets.UTF_8);
         response.write(true, ByteBuffer.wrap(payload), callback);
     }
+
+    private record EncodedText(String value) {}
+
+    private record QueryPair(String raw, Map<String, String> query) {}
+
+    record RawQuery(String value) {}
 }

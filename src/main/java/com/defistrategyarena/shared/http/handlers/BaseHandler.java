@@ -7,37 +7,38 @@ import com.defistrategyarena.shared.infra.http.HttpResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public abstract class BaseHandler<Req, Res extends JsonHttpResult> implements HttpHandler {
+public abstract class BaseHandler<Res extends JsonHttpResult> implements HttpHandler {
 
     protected static final int STATUS_BAD_REQUEST = 400;
     private static final String JSON_CONTENT_TYPE = "application/json";
     private static final String WRITE_FAILED = "failed to write json response";
 
-    private final Class<Req> requestType;
     private final ObjectMapper objectMapper;
 
-    protected BaseHandler(Class<Req> requestType) {
-        this(requestType, new ObjectMapper());
+    protected BaseHandler() {
+        this(new ObjectMapper());
     }
 
-    protected BaseHandler(Class<Req> requestType, ObjectMapper objectMapper) {
-        this.requestType = requestType;
+    protected BaseHandler(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 
     @Override
     public final HttpResponse handle(HttpRequest request) {
         try {
-            Req payload = objectMapper.readValue(request.body(), requestType);
-            return toHttpResponse(execute(payload));
+            return toHttpResponse(execute(request));
         } catch (JsonProcessingException | IllegalArgumentException exception) {
             return toHttpResponse(badRequestBody());
         }
     }
 
-    protected abstract Res execute(Req payload);
+    protected abstract Res execute(HttpRequest request) throws JsonProcessingException;
 
     protected abstract Res badRequestBody();
+
+    protected final <T> T readJson(ReadJsonCommand<T> command) throws JsonProcessingException {
+        return objectMapper.readValue(command.body(), command.type());
+    }
 
     private HttpResponse toHttpResponse(Res result) {
         return new HttpResponse(result.status(), JSON_CONTENT_TYPE, writeJson(result));
@@ -50,4 +51,6 @@ public abstract class BaseHandler<Req, Res extends JsonHttpResult> implements Ht
             throw new IllegalStateException(WRITE_FAILED, exception);
         }
     }
+
+    public record ReadJsonCommand<T>(String body, Class<T> type) {}
 }

@@ -1,5 +1,6 @@
 package com.defistrategyarena.shared.unit.infra.http;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.defistrategyarena.shared.infra.http.HttpRequest;
@@ -33,8 +34,30 @@ class HttpRequestTest {
     }
 
     @Test
-    void create_copies_valid_request() {
-        HttpRequest request = HttpRequest.create(new HttpRequest("GET", "/health", ""));
-        org.junit.jupiter.api.Assertions.assertEquals("/health", request.path());
+    void rejects_null_query_map() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new HttpRequest("GET", "/health", "", null, java.util.Map.of()));
+    }
+
+    @Test
+    void rejects_null_path_variables_map() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new HttpRequest("GET", "/health", "", java.util.Map.of(), null));
+    }
+
+    @Test
+    void create_factory_copies_query_and_path_variables() {
+        HttpRequest request =
+                HttpRequest.create(
+                        new HttpRequest(
+                                "GET",
+                                "/strategies/x",
+                                "",
+                                java.util.Map.of("ownerId", "o"),
+                                java.util.Map.of("strategyId", "x")));
+        assertEquals("o", request.query().get("ownerId"));
+        assertEquals("x", request.pathVariables().get("strategyId"));
     }
 }
