@@ -13,6 +13,8 @@ import com.defistrategyarena.strategy.adapter.web.CreateStrategyHttpRequest;
 import com.defistrategyarena.strategy.adapter.web.CreateStrategyHttpResponse;
 import com.defistrategyarena.strategy.adapter.web.StrategyRestAdapter;
 import com.defistrategyarena.strategy.application.CreateStrategy;
+import com.defistrategyarena.strategy.application.GetStrategy;
+import com.defistrategyarena.strategy.application.ListStrategies;
 import com.defistrategyarena.strategy.application.OwnerStrategyName;
 import com.defistrategyarena.strategy.domain.Privacy;
 import com.defistrategyarena.strategy.domain.Strategy;
@@ -64,7 +66,13 @@ class CreateStrategyE2ETest {
         events = new RecordingEventPublisher();
         CreateStrategy useCase =
                 new CreateStrategy(new CreateStrategy.CreateStrategyDeps(strategies, events));
-        http = new StrategyRestAdapter(new StrategyRestAdapter.StrategyRestAdapterDeps(useCase));
+        ListStrategies listStrategies =
+                new ListStrategies(new ListStrategies.ListStrategiesDeps(strategies));
+        GetStrategy getStrategy = new GetStrategy(new GetStrategy.GetStrategyDeps(strategies));
+        http =
+                new StrategyRestAdapter(
+                        new StrategyRestAdapter.StrategyRestAdapterDeps(
+                                useCase, listStrategies, getStrategy));
     }
 
     @Test

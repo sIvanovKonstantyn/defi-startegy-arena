@@ -1,10 +1,15 @@
 package com.defistrategyarena.strategy.adapter.persistence;
 
 import com.defistrategyarena.strategy.application.DuplicateStrategyException;
+import com.defistrategyarena.strategy.application.ListStrategiesQuery;
 import com.defistrategyarena.strategy.application.OwnerStrategyName;
+import com.defistrategyarena.strategy.application.StrategyPage;
 import com.defistrategyarena.strategy.application.StrategyRepository;
 import com.defistrategyarena.strategy.domain.Strategy;
 import com.defistrategyarena.strategy.domain.StrategyId;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -44,6 +49,24 @@ public final class InMemoryStrategyRepository implements StrategyRepository {
     }
 
     @Override
+    public StrategyPage listByOwner(ListStrategiesQuery query) {
+        List<Strategy> owned = new ArrayList<>();
+        for (Strategy strategy : byId.values()) {
+            if (query.ownerId().equals(strategy.ownerId())) {
+                owned.add(strategy);
+            }
+        }
+        owned.sort(comparator(query));
+        long total = owned.size();
+        int fromIndex = query.page() * query.size();
+        if (fromIndex >= owned.size()) {
+            return new StrategyPage(List.of(), total);
+        }
+        int toIndex = Math.min(fromIndex + query.size(), owned.size());
+        return new StrategyPage(owned.subList(fromIndex, toIndex), total);
+    }
+
+    @Override
     public int size() {
         return byId.size();
     }
@@ -54,6 +77,19 @@ public final class InMemoryStrategyRepository implements StrategyRepository {
             return SINGLE_COUNT;
         }
         return EMPTY_COUNT;
+    }
+
+    private static Comparator<Strategy> comparator(ListStrategiesQuery query) {
+        Comparator<Strategy> byField;
+        if (ListStrategiesQuery.SORT_STRATEGY_ID.equals(query.sort())) {
+            byField = Comparator.comparing(strategy -> strategy.id().value());
+        } else {
+            byField = Comparator.comparing(strategy -> strategy.current().definition().name());
+        }
+        if (ListStrategiesQuery.ORDER_DESC.equals(query.order())) {
+            return byField.reversed();
+        }
+        return byField;
     }
 
     private static String indexKey(OwnerStrategyName key) {

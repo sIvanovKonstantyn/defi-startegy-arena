@@ -14,7 +14,9 @@ class ApplicationRoutesTest {
     void registers_health_route() {
         HttpRouteRegistry routes = ApplicationRoutes.createDefaultRoutes();
         HttpHandler handler =
-                routes.find(HttpRouteLookup.create(new HttpRouteLookup("GET", "/health"))).orElseThrow();
+                routes.find(HttpRouteLookup.create(new HttpRouteLookup("GET", "/health")))
+                        .orElseThrow()
+                        .handler();
         assertEquals(200, handler.handle(new HttpRequest("GET", "/health", "")).status());
     }
 
