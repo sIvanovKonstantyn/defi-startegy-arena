@@ -376,8 +376,8 @@ src/test/java/…/<context>/
 ## 13. Next steps
 
 1. ~~**Phase 1:** create-private-strategy slice~~ — done ([phase-1](./phases/phase-1-strategy-create.md)).
-2. **Phase 2:** Jetty `POST /strategies` at composition root ([phase-2](./phases/phase-2-jetty-create-strategy.md), [flow](./flows/strategy-create-http.md)).
-3. Confirm remaining v1 DSL action/condition catalog beyond phase-1 `price_above` / `hold`.
+2. ~~**Phase 2:** Jetty `POST /strategies`~~ — done ([phase-2](./phases/phase-2-jetty-create-strategy.md), [flow](./flows/strategy-create-http.md)).
+3. ~~**Phase 3:** V1 DSL condition/action catalog~~ — done ([phase-3](./phases/phase-3-dsl-catalog.md), [flow](./flows/strategy-dsl-catalog.md)).
 4. Define market-data snapshot format and one ingestion adapter.
 5. Implement interpreter MVP and one leaderboard metric.
 6. Add privacy/share and JSON/YAML export before broader protocol actions.

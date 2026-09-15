@@ -14,8 +14,6 @@ public final class StrategyRestAdapter {
     private static final int STATUS_BAD_REQUEST = 400;
     private static final int STATUS_CONFLICT = 409;
     private static final String EMPTY_STRATEGY_ID = "";
-    private static final String RULE_TYPE_PRICE_ABOVE = "price_above";
-    private static final String UNKNOWN_RULE_TYPE = "unknown rule type";
 
     private final CreateStrategy createStrategy;
 
@@ -40,19 +38,9 @@ public final class StrategyRestAdapter {
     private static StrategyDefinition toDefinition(CreateStrategyHttpRequest request) {
         List<StrategyDefinition.Rule> rules = new ArrayList<>();
         for (CreateStrategyHttpRequest.RuleBody body : request.rules()) {
-            rules.add(toRule(body));
+            rules.add(CreateStrategyRuleMapper.toRule(body));
         }
         return StrategyDefinition.create(new StrategyDefinition(request.name(), rules));
-    }
-
-    private static StrategyDefinition.Rule toRule(CreateStrategyHttpRequest.RuleBody body) {
-        if (!RULE_TYPE_PRICE_ABOVE.equals(body.type())) {
-            throw new IllegalArgumentException(UNKNOWN_RULE_TYPE);
-        }
-        return new StrategyDefinition.Rule(
-                body.id(),
-                new StrategyDefinition.PriceAbove(body.instrument(), body.threshold()),
-                new StrategyDefinition.Hold());
     }
 
     public record StrategyRestAdapterDeps(CreateStrategy createStrategy) {}
