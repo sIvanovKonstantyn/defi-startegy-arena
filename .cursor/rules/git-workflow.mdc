@@ -1,0 +1,33 @@
+---
+description: Git branch, commit message, and no-push-to-main conventions
+alwaysApply: true
+---
+
+# Git workflow (mandatory)
+
+## Branches
+
+- Feature work happens on **`review/<feature_name>`** only.
+- `<feature_name>`: lowercase letters, digits, `_` or `-` (e.g. `review/arena_submit_flow`).
+- Do **not** commit on `main` after the repository’s initial commit.
+- Do **not** push to `main` after the initial commit (pre-push hook blocks it).
+
+## Commit messages
+
+Format (exact):
+
+```text
+CONTEXT | short imperative description
+```
+
+- `CONTEXT` is an uppercase token: `IDENTITY`, `STRATEGY`, `MARKETDATA`, `ARENA`, `LEADERBOARD`, `SHARED`, `DOCS`, `BUILD`, or `ARCH`.
+- Single space, pipe `|`, single space, then the message (non-empty).
+- Examples: `ARENA | add submission job port`, `DOCS | document backtest sequence`
+
+## Hooks
+
+- `pre-commit`: branch name + `./gradlew qualityCheck`
+- `commit-msg`: message pattern
+- `pre-push`: refuse updates to `main` / `master` after initial commit
+
+Never use `--no-verify` to bypass these.

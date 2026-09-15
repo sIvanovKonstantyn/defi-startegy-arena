@@ -1,0 +1,199 @@
+plugins {
+    id 'java'
+    id 'jacoco'
+    id 'pmd'
+    id 'de.aaschmid.cpd' version '3.5'
+    id 'com.github.spotbugs' version '6.5.11'
+    id 'org.cyclonedx.bom' version '2.3.1'
+}
+
+group = 'com.defistrategyarena'
+version = '0.1.0-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    set('archunitVersion', '1.4.1')
+    set('junitVersion', '5.12.2')
+    set('mockitoVersion', '5.17.0')
+    set('spotbugsToolVersion', '4.10.3')
+    set('findsecbugsVersion', '1.14.0')
+    set('jettyVersion', '12.0.16')
+}
+
+dependencies {
+    implementation "org.eclipse.jetty:jetty-server:${jettyVersion}"
+
+    spotbugsPlugins "com.h3xstream.findsecbugs:findsecbugs-plugin:${findsecbugsVersion}"
+
+    testImplementation platform("org.junit:junit-bom:${junitVersion}")
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
+    testImplementation "com.tngtech.archunit:archunit-junit5:${archunitVersion}"
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+configurations.configureEach {
+    exclude group: 'org.projectlombok', module: 'lombok'
+}
+
+def jacocoExcludes = [
+        '**/DefiStrategyArenaApplication.class',
+        '**/package-info.class',
+]
+
+tasks.named('test') {
+    useJUnitPlatform()
+    finalizedBy tasks.named('jacocoTestReport'), tasks.named('jacocoTestCoverageVerification')
+}
+
+jacoco {
+    toolVersion = '0.8.13'
+}
+
+tasks.named('jacocoTestReport', JacocoReport) {
+    dependsOn tasks.named('test')
+    reports {
+        xml.required = true
+        html.required = true
+    }
+    classDirectories.setFrom(
+            files(sourceSets.main.output.classesDirs.files.collect { dir ->
+                fileTree(dir: dir, exclude: jacocoExcludes)
+            })
+    )
+}
+
+tasks.named('jacocoTestCoverageVerification', JacocoCoverageVerification) {
+    dependsOn tasks.named('jacocoTestReport')
+    violationRules {
+        rule {
+            enabled = true
+            element = 'BUNDLE'
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 1.0
+            }
+            limit {
+                counter = 'BRANCH'
+                value = 'COVEREDRATIO'
+                minimum = 1.0
+            }
+            limit {
+                counter = 'INSTRUCTION'
+                value = 'COVEREDRATIO'
+                minimum = 1.0
+            }
+        }
+    }
+    classDirectories.setFrom(
+            files(sourceSets.main.output.classesDirs.files.collect { dir ->
+                fileTree(dir: dir, exclude: jacocoExcludes)
+            })
+    )
+}
+
+pmd {
+    toolVersion = '7.13.0'
+    consoleOutput = true
+    ruleSetFiles = files('config/pmd/main-ruleset.xml')
+    ruleSets = []
+    ignoreFailures = false
+    threads = 2
+}
+
+tasks.named('pmdMain', Pmd) {
+    ruleSetFiles = files('config/pmd/main-ruleset.xml')
+}
+
+tasks.named('pmdTest', Pmd) {
+    ruleSetFiles = files('config/pmd/test-ruleset.xml')
+}
+
+cpd {
+    toolVersion = '7.13.0'
+    language = 'java'
+    minimumTokenCount = 40
+    ignoreFailures = false
+}
+
+tasks.named('cpdCheck').configure {
+    source = files('src/main/java')
+}
+
+spotbugs {
+    toolVersion = spotbugsToolVersion
+    ignoreFailures = false
+    showProgress = false
+    effort = 'max'
+    reportLevel = 'low'
+    excludeFilter = file('config/spotbugs/exclude.xml')
+}
+
+tasks.named('spotbugsMain').configure {
+    reports {
+        html.required = true
+        xml.required = true
+    }
+}
+
+tasks.named('spotbugsTest').configure {
+    enabled = false
+}
+
+cyclonedxBom {
+    includeConfigs = ['runtimeClasspath', 'compileClasspath', 'testRuntimeClasspath']
+    skipConfigs = []
+    projectType = 'application'
+    schemaVersion = '1.6'
+    destination = file("${buildDir}/reports/cyclonedx")
+    outputName = 'bom'
+    outputFormat = 'json'
+    includeBomSerialNumber = false
+}
+
+def cycloneDxBomFile = layout.buildDirectory.file('reports/cyclonedx/bom.json')
+
+tasks.register('dependencyVulnCheck', Exec) {
+    group = 'verification'
+    description = 'Scans the CycloneDX SBOM with OSV-Scanner (OSV/GHSA).'
+    dependsOn tasks.named('cyclonedxBom')
+    workingDir = rootDir
+    commandLine 'bash', 'scripts/osv-scan-sbom.sh', cycloneDxBomFile.get().asFile.absolutePath
+    inputs.file(cycloneDxBomFile)
+    outputs.dir(layout.buildDirectory.dir('reports/osv'))
+}
+
+tasks.register('qualityCheck') {
+    group = 'verification'
+    description = 'Runs architecture, PMD, CPD, SpotBugs/FindSecBugs, OSV dependency scan, tests, and JaCoCo 100% gates.'
+    dependsOn(
+            tasks.named('pmdMain'),
+            tasks.named('pmdTest'),
+            tasks.named('cpdCheck'),
+            tasks.named('spotbugsMain'),
+            tasks.named('dependencyVulnCheck'),
+            tasks.named('test'),
+            tasks.named('jacocoTestCoverageVerification')
+    )
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('qualityCheck')
+}
+
+tasks.register('installGitHooks', Exec) {
+    group = 'build setup'
+    description = 'Installs the pre-commit hook that runs ./gradlew qualityCheck.'
+    workingDir = rootDir
+    commandLine 'bash', 'scripts/install-git-hooks.sh'
+}

@@ -1,0 +1,46 @@
+---
+description: Enforce quality gates — read tool failures and fix until green
+alwaysApply: true
+---
+
+# Quality gates (mandatory)
+
+Before finishing any Java change, run and fix until green:
+
+```bash
+./gradlew qualityCheck
+```
+
+This runs **PMD** (main + test, including unused-code and security rules), **CPD** (duplicates), **SpotBugs + FindSecBugs**, **OSV-Scanner** (dependency CVEs via CycloneDX SBOM), **tests** (including ArchUnit), and **JaCoCo 100%**. The same task is enforced by the **git pre-commit hook**.
+
+`dependencyVulnCheck` needs network on first run (downloads OSV-Scanner into `.tools/` and queries OSV).
+
+## When a gate fails
+
+1. Read the full tool output (PMD rule id, ArchUnit rule name, JaCoCo class/line, test failure).
+2. Fix production or unit-test code to satisfy the gate — do **not** weaken rules, lower coverage, or edit approved context e2e tests.
+3. Re-run `./gradlew qualityCheck` and repeat until green.
+4. Never commit with failing quality checks; never use `--no-verify`.
+
+## Architecture constraints (ArchUnit)
+
+- Package-based modulith: `identity`, `strategy`, `marketdata`, `arena`, `leaderboard`, `shared`.
+- Hexagonal inside contexts: `domain` → no `application`/`adapter`/frameworks/JDBC; `application` → no `adapter`.
+- Controllers only in `..adapter.web..`.
+- **No direct dependencies between bounded contexts** — only async via `DomainEventPublisher` / `DomainEventListener` (`shared.messaging`).
+- Domain models in `..domain..` must expose **`public static create(...)`** returning themselves; IDs are **idempotent UUIDs** from fields via `IdempotentUuid` / `IdGenerationInput`. Non-record domain types: private constructors only.
+- No Lombok (dependency banned; ArchUnit + PMD enforce).
+- Prefer **records** for immutable data. Do not introduce anemic getter/setter beans.
+- Methods take **at most one parameter**, and it must be a **DTO** (not a primitive or `String`).
+- **No magic numbers** anywhere in executable production code (including `0` / `1` / `-1`) — use named constants.
+- **HTTP runtime in `shared.infra`** — Jetty/Helidon (or similar) only under `shared.infra..`; bounded-context hexagonal layers must not depend on `shared.infra`; `HttpServerBootstrap` implementations live in `shared.infra`; composition root (`DefiStrategyArenaApplication`, `bootstrap`) selects a bootstrap impl, never Jetty/Helidon APIs directly.
+
+## Coverage
+
+- JaCoCo minimum is **100%** on counted classes.
+- `package-info` is excluded from the ratio.
+- Prefer records so accessors are exercised by real tests; do not add trivial getter/setter-only types.
+
+## Docs
+
+See `docs/code-quality-and-architecture.md` and `docs/system-architecture.md`.

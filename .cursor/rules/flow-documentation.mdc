@@ -1,0 +1,58 @@
+---
+description: Document every built flow in docs/ with Mermaid sequences and prose
+alwaysApply: true
+---
+
+# Flow documentation (mandatory)
+
+Whenever you design or implement a **flow** (use case, async event chain, API request path, job/backtest pipeline, share/export, auth, etc.), document it in `docs/` **in the same change set** as the code.
+
+## What to write
+
+Create or update a doc under `docs/flows/` (or a clear `docs/` subfolder for the context), named for the flow, e.g. `docs/flows/arena-submit-backtest.md`.
+
+Each flow doc must include:
+
+1. **Purpose** — one short paragraph (what / why).
+2. **Actors & boundaries** — which packages/contexts participate (`identity`, `strategy`, `marketdata`, `arena`, `leaderboard`, `shared`).
+3. **Sequence (Mermaid)** — at least one `sequenceDiagram` (or `flowchart` if more accurate) covering the happy path; add a second diagram for important failure/async paths when relevant.
+4. **Text walkthrough** — step-by-step explanation matching the diagram (inputs, outputs, events published/listened, persistence touches).
+5. **Errors / edge cases** — brief list of notable failures and how they surface.
+
+## Rules
+
+- Do **not** leave flow behavior only in code or chat — docs are part of the deliverable.
+- Prefer updating an existing flow doc over duplicating.
+- Keep Mermaid valid and readable (named participants, no secrets).
+- Cross-link from `docs/system-architecture.md` only when the flow is a major product path.
+
+## Example skeleton
+
+```markdown
+# Submit strategy to arena
+
+## Purpose
+...
+
+## Actors
+- strategy (application)
+- arena (application / worker)
+- shared.messaging
+
+## Sequence
+
+\`\`\`mermaid
+sequenceDiagram
+  participant User
+  participant Strategy
+  participant Arena
+  participant Bus as DomainEventPublisher
+  User->>Strategy: submit(...)
+  Strategy->>Bus: publish(SubmissionRequested)
+  Bus->>Arena: on(SubmissionRequested)
+  Arena-->>User: result / leaderboard update
+\`\`\`
+
+## Walkthrough
+1. ...
+```
