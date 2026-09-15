@@ -28,11 +28,13 @@ ext {
     set('findsecbugsVersion', '1.14.0')
     set('jettyVersion', '12.0.16')
     set('jspecifyVersion', '1.0.0')
+    set('jacksonVersion', '2.18.3')
 }
 
 dependencies {
     implementation "org.eclipse.jetty:jetty-server:${jettyVersion}"
     implementation "org.jspecify:jspecify:${jspecifyVersion}"
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
 
     spotbugsPlugins "com.h3xstream.findsecbugs:findsecbugs-plugin:${findsecbugsVersion}"
 

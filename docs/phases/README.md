@@ -5,3 +5,4 @@ Ordered implementation slices. Each phase starts with **approved context e2e sce
 | Phase | Doc | Status |
 | --- | --- | --- |
 | 1 — Create private strategy | [phase-1-strategy-create.md](./phase-1-strategy-create.md) | Approved / implemented |
+| 2 — Jetty `POST /strategies` | [phase-2-jetty-create-strategy.md](./phase-2-jetty-create-strategy.md) | Implemented |
