@@ -46,3 +46,4 @@ sequenceDiagram
 - Blank owner / invalid rules → `400` (unchanged).
 - Unique `(owner_id_normalized, name_normalized)` violation → `409`.
 - Missing `app.properties` or invalid `persistence.mode` → startup failure.
+- Compose load-test baseline: app heap 2g in a 2.5g container (pool 10); Postgres 2g / 4 CPU with `shared_buffers=512MB` and `max_connections=100`.

@@ -23,7 +23,7 @@ class AppConfigTest {
     private static final String JDBC_PASSWORD = "compose-pass";
     private static final String POOL_SIZE = "8";
     private static final int POOL_SIZE_INT = 8;
-    private static final int DEFAULT_POOL = 5;
+    private static final int DEFAULT_POOL = 10;
     private static final int DEFAULT_IDLE = 1;
     private static final long DEFAULT_TIMEOUT = 5000L;
     private static final long DEFAULT_IDLE_MS = 600000L;

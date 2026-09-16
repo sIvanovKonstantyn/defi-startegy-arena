@@ -24,7 +24,7 @@ Override: env var = `DSA_` + property key with `.` → `_` and camelCase → `UP
 | `jdbc.url` | `DSA_JDBC_URL` | `jdbc:postgresql://localhost:5432/dsa` |
 | `jdbc.user` | `DSA_JDBC_USER` | `dsa` |
 | `jdbc.password` | `DSA_JDBC_PASSWORD` | `dsa` |
-| `hikari.maximumPoolSize` | `DSA_HIKARI_MAXIMUM_POOL_SIZE` | `5` |
+| `hikari.maximumPoolSize` | `DSA_HIKARI_MAXIMUM_POOL_SIZE` | `10` |
 | `hikari.minimumIdle` | `DSA_HIKARI_MINIMUM_IDLE` | `1` |
 | `hikari.connectionTimeoutMs` | `DSA_HIKARI_CONNECTION_TIMEOUT_MS` | `5000` |
 | `hikari.idleTimeoutMs` | `DSA_HIKARI_IDLE_TIMEOUT_MS` | `600000` |
@@ -32,6 +32,13 @@ Override: env var = `DSA_` + property key with `.` → `_` and camelCase → `UP
 | `hikari.poolName` | `DSA_HIKARI_POOL_NAME` | `dsa-strategy` |
 
 Compose sets `DSA_PERSISTENCE_MODE=postgres` and JDBC/Hikari env only (no second properties file).
+
+### Compose resource limits (load-test baseline)
+
+| Service | Memory | CPUs | Notes |
+| --- | --- | --- | --- |
+| `app` | **2.5g** (~20% over heap) | 1.0 | JVM `-Xms2g -Xmx2g`, G1; Hikari max pool **10** |
+| `db` | **2g** | **4.0** | `shared_buffers=512MB`, `max_connections=100` |
 
 ## Schema
 
