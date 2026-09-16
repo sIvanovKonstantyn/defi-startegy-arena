@@ -1,0 +1,12 @@
+# Dedicated load-test host profile (needs ≥5 logical CPUs free).
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.loadtest.yml up -d --build
+#   COMPOSE_FILES="-f docker-compose.yml -f docker-compose.loadtest.yml" ./scripts/loadtest/run-capacity.sh
+services:
+  db:
+    cpus: 4.0
+  mem_limit: 2g
+
+  app:
+    cpus: 1.0
+    mem_limit: 2.5g

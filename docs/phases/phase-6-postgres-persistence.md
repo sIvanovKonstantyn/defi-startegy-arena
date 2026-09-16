@@ -35,10 +35,17 @@ Compose sets `DSA_PERSISTENCE_MODE=postgres` and JDBC/Hikari env only (no second
 
 ### Compose resource limits (load-test baseline)
 
-| Service | Memory | CPUs | Notes |
+| Service | Memory | CPUs (default) | Notes |
 | --- | --- | --- | --- |
-| `app` | **2.5g** (~20% over heap) | 1.0 | JVM `-Xms2g -Xmx2g`, G1; Hikari max pool **10** |
-| `db` | **2g** | **4.0** | `shared_buffers=512MB`, `max_connections=100` |
+| `app` | **2.5g** (~20% over heap) | **0.75** (laptop) / **1.0** via `docker-compose.loadtest.yml` | JVM `-Xms2g -Xmx2g`, G1; Hikari max pool **10** |
+| `db` | **2g** | **1.25** (laptop) / **4.0** via `docker-compose.loadtest.yml` | `shared_buffers=512MB`, `max_connections=100` |
+
+On hosts with ≥5 free CPUs, prefer the load-test override:
+
+```bash
+COMPOSE_LOADTEST_FILE=docker-compose.loadtest.yml ./scripts/loadtest/run-capacity.sh
+```
+
 
 ## Schema
 
@@ -50,6 +57,8 @@ Flyway `V1__strategies.sql`: current version only; unique `(owner_id_normalized,
 docker compose up --build
 # API: http://localhost:8080
 ```
+
+Load-test capacity probe (combined create/get/list/update): see [docs/load-tests/README.md](../load-tests/README.md) and flow [strategy-crud-load-test.md](../flows/strategy-crud-load-test.md).
 
 ## Out of scope
 
