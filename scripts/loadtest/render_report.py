@@ -25,6 +25,25 @@ def fmt_rate(value: float) -> str:
     return f"{value:.4f}"
 
 
+def fmt_ms(value: object) -> str:
+    try:
+        return f"{float(value):.2f}"
+    except (TypeError, ValueError):
+        return "n/a"
+
+
+def latency(stage: dict, metric: str) -> dict:
+    raw = stage.get(metric) or {}
+    return {
+        "avg_ms": raw.get("avg_ms", 0),
+        "p50_ms": raw.get("p50_ms", 0),
+        "p90_ms": raw.get("p90_ms", 0),
+        "p95_ms": raw.get("p95_ms", 0),
+        "p99_ms": raw.get("p99_ms", 0),
+        "max_ms": raw.get("max_ms", 0),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--results-dir", required=True)
@@ -55,6 +74,7 @@ def main() -> None:
         f"(docker stats %; e.g. app 1 CPU → {args.cpu_limit:.0f}%, db 4 CPU → {args.cpu_limit * 4:.0f}%)",
         "- **zero** HTTP failures / failed checks / flow errors",
         "- containers stay up (**no OOM / crash**)",
+        "- latency percentiles recorded for HTTP requests and full combined flows",
         "",
         "## Run metadata",
         "",
@@ -99,6 +119,61 @@ def main() -> None:
     lines.extend(
         [
             "",
+            "## Latency (HTTP request duration, ms)",
+            "",
+            "Per-request latency across create/get/list/update calls (`http_req_duration`).",
+            "",
+            "| Flow RPS | avg | p50 | p90 | p95 | p99 | max |",
+            "| ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+        ]
+    )
+    for stage in stages:
+        http = latency(stage, "http_req_duration")
+        lines.append(
+            "| {rps} | {avg} | {p50} | {p90} | {p95} | {p99} | {mx} |".format(
+                rps=stage.get("rps"),
+                avg=fmt_ms(http["avg_ms"]),
+                p50=fmt_ms(http["p50_ms"]),
+                p90=fmt_ms(http["p90_ms"]),
+                p95=fmt_ms(http["p95_ms"]),
+                p99=fmt_ms(http["p99_ms"]),
+                mx=fmt_ms(http["max_ms"]),
+            )
+        )
+    if not stages:
+        lines.append("| — | — | — | — | — | — | — |")
+
+    lines.extend(
+        [
+            "",
+            "## Latency (combined flow duration, ms)",
+            "",
+            "End-to-end time for one combined iteration "
+            "(create → get one → list → update) (`flow_duration`).",
+            "",
+            "| Flow RPS | avg | p50 | p90 | p95 | p99 | max |",
+            "| ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+        ]
+    )
+    for stage in stages:
+        flow = latency(stage, "flow_duration")
+        lines.append(
+            "| {rps} | {avg} | {p50} | {p90} | {p95} | {p99} | {mx} |".format(
+                rps=stage.get("rps"),
+                avg=fmt_ms(flow["avg_ms"]),
+                p50=fmt_ms(flow["p50_ms"]),
+                p90=fmt_ms(flow["p90_ms"]),
+                p95=fmt_ms(flow["p95_ms"]),
+                p99=fmt_ms(flow["p99_ms"]),
+                mx=fmt_ms(flow["max_ms"]),
+            )
+        )
+    if not stages:
+        lines.append("| — | — | — | — | — | — | — |")
+
+    lines.extend(
+        [
+            "",
             "## Combined flow under test",
             "",
             "Each counted flow RPS iteration performs:",
@@ -113,8 +188,7 @@ def main() -> None:
             "## Reproduce",
             "",
             "```bash",
-            "docker compose up -d --build",
-            "./scripts/loadtest/run-capacity.sh",
+            "FRESH_DB=1 ./scripts/loadtest/run-capacity.sh",
             "```",
             "",
             "Artifacts under `build/loadtest/` (gitignored). This report is written to "

@@ -13,6 +13,7 @@ const flowErrors = new Counter('flow_errors');
 const flowDuration = new Trend('flow_duration', true);
 
 export const options = {
+  summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(90)', 'p(95)', 'p(99)'],
   scenarios: {
     combined_crud: {
       executor: 'constant-arrival-rate',
@@ -143,5 +144,13 @@ function textSummary(data, _opts) {
   const failed = data.metrics.http_req_failed?.values?.rate ?? 1;
   const checks = data.metrics.checks?.values?.rate ?? 0;
   const flows = data.metrics.flow_errors?.values?.count ?? 0;
-  return `k6 summary: http_fail=${failed} checks=${checks} flow_errors=${flows}\n`;
+  const http = data.metrics.http_req_duration?.values ?? {};
+  const flow = data.metrics.flow_duration?.values ?? {};
+  return (
+    `k6 summary: http_fail=${failed} checks=${checks} flow_errors=${flows}\n` +
+    `http_req_duration_ms p50=${http.med ?? 'n/a'} p90=${http['p(90)'] ?? 'n/a'} ` +
+    `p95=${http['p(95)'] ?? 'n/a'} p99=${http['p(99)'] ?? 'n/a'}\n` +
+    `flow_duration_ms p50=${flow.med ?? 'n/a'} p90=${flow['p(90)'] ?? 'n/a'} ` +
+    `p95=${flow['p(95)'] ?? 'n/a'} p99=${flow['p(99)'] ?? 'n/a'}\n`
+  );
 }

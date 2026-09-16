@@ -26,6 +26,9 @@ COMPOSE_LOADTEST_FILE=docker-compose.loadtest.yml ./scripts/loadtest/run-capacit
 
 # Faster probe
 DURATION=20s RPS_LADDER="5 10 15 20 25 30" ./scripts/loadtest/run-capacity.sh
+
+# Fresh empty Postgres before the ladder
+FRESH_DB=1 DURATION=45s RPS_LADDER="100 125 150" ./scripts/loadtest/run-capacity.sh
 ```
 
 The script:

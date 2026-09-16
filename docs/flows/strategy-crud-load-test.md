@@ -43,7 +43,7 @@ sequenceDiagram
 2. Each ladder step holds a fixed combined-flow arrival rate for `DURATION`.
 3. One flow = create + get one + list + update (≈ 4 HTTP calls).
 4. Stage fails on any HTTP/check/flow error, container exit (OOM), or peak CPU above **80% of that service’s CPU quota**.
-5. Report records per-stage peaks and the highest graceful RPS.
+5. Report records per-stage peaks, HTTP/flow latency percentiles (p50/p90/p95/p99), and the highest graceful RPS.
 
 ## Errors / edge cases
 
