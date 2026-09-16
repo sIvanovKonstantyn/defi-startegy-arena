@@ -7,4 +7,8 @@ public final class DuplicateStrategyException extends RuntimeException {
     public DuplicateStrategyException() {
         super(MESSAGE);
     }
+
+    public DuplicateStrategyException(Throwable cause) {
+        super(MESSAGE, cause);
+    }
 }

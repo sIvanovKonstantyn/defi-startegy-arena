@@ -1,5 +1,7 @@
 package com.defistrategyarena;
 
+import com.defistrategyarena.bootstrap.AppConfig;
+import com.defistrategyarena.bootstrap.ApplicationComposition;
 import com.defistrategyarena.bootstrap.ApplicationRoutes;
 import com.defistrategyarena.bootstrap.ApplicationStartCommand;
 import com.defistrategyarena.shared.infra.http.HttpServerBootstrap;
@@ -10,12 +12,13 @@ import com.defistrategyarena.shared.infra.http.jetty.JettyHttpServerBootstrap;
 
 public final class DefiStrategyArenaApplication {
 
-    private static final int DEFAULT_PORT = 8080;
-
     private DefiStrategyArenaApplication() {}
 
     public static void main(String[] args) throws InterruptedException {
-        try (HttpServerRuntime runtime = start(selectBootstrap())) {
+        AppConfig config = AppConfig.load();
+        try (ApplicationComposition composition = ApplicationComposition.create(config);
+                HttpServerRuntime runtime =
+                        start(new RuntimeStartRequest(selectBootstrap(), config, composition))) {
             runtime.join();
         }
     }
@@ -26,16 +29,37 @@ public final class DefiStrategyArenaApplication {
 
     static HttpServerRuntime start(HttpServerBootstrap bootstrap) {
         return start(
-                ApplicationStartCommand.create(
-                        new ApplicationStartCommand(
-                                bootstrap,
-                                HttpServerConfig.create(new HttpServerConfig(DEFAULT_PORT)))));
+                new RuntimeStartRequest(
+                        bootstrap, AppConfig.load(), ApplicationComposition.createDefault()));
     }
 
     static HttpServerRuntime start(ApplicationStartCommand command) {
+        return start(new CommandStartRequest(command, ApplicationComposition.createDefault()));
+    }
+
+    static HttpServerRuntime start(RuntimeStartRequest request) {
+        return start(
+                new CommandStartRequest(
+                        ApplicationStartCommand.create(
+                                new ApplicationStartCommand(
+                                        request.bootstrap(),
+                                        HttpServerConfig.create(
+                                                new HttpServerConfig(request.config().httpPort())))),
+                        request.composition()));
+    }
+
+    static HttpServerRuntime start(CommandStartRequest request) {
         HttpServerStartData startData =
                 HttpServerStartData.create(
-                        new HttpServerStartData(command.config(), ApplicationRoutes.createDefaultRoutes()));
-        return command.bootstrap().start(startData);
+                        new HttpServerStartData(
+                                request.command().config(),
+                                ApplicationRoutes.createDefaultRoutes(request.composition())));
+        return request.command().bootstrap().start(startData);
     }
+
+    record RuntimeStartRequest(
+            HttpServerBootstrap bootstrap, AppConfig config, ApplicationComposition composition) {}
+
+    record CommandStartRequest(
+            ApplicationStartCommand command, ApplicationComposition composition) {}
 }

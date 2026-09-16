@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "hooks": {
+    "stop": [
+      {
+        "type": "prompt",
+        "prompt": "If this session changed Java, Gradle, PMD, ArchUnit, or JaCoCo config: did you run ./gradlew qualityCheck and fix all failures (PMD, ArchUnit, tests, 100% coverage)? If not, follow up to run it and fix until green. Do not weaken rules or skip the pre-commit hook. Hook input: $ARGUMENTS",
+        "timeout": 30,
+        "loop_limit": 3
+      }
+    ]
+  }
+}
