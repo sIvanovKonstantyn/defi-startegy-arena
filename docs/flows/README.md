@@ -13,3 +13,4 @@ Each file should include purpose, actors, a Mermaid sequence, and a text walkthr
 | Strategy reads list/get (phase 4) | [strategy-reads.md](./strategy-reads.md) |
 | Strategy update/delete (phase 5) | [strategy-update-delete.md](./strategy-update-delete.md) |
 | Strategy Postgres persistence (phase 6) | [strategy-persistence-postgres.md](./strategy-persistence-postgres.md) |
+| Strategy CRUD load-test capacity | [strategy-crud-load-test.md](./strategy-crud-load-test.md) |
