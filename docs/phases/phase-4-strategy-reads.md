@@ -58,4 +58,4 @@ Invalid paging/sort → `400`. Unknown owner → `200` empty page.
 
 ## Out of scope
 
-Authn, multi-field sort, cursor pagination, update/delete, share.
+Authn, multi-field sort, cursor pagination, share. Update/delete: [phase-5](./phase-5-strategy-update-delete.md).

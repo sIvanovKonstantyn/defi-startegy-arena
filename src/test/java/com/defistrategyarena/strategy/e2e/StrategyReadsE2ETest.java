@@ -14,11 +14,13 @@ import com.defistrategyarena.strategy.adapter.web.StrategyListHttpResponse;
 import com.defistrategyarena.strategy.adapter.web.StrategyRestAdapter;
 import com.defistrategyarena.strategy.adapter.web.StrategySummaryHttpResponse;
 import com.defistrategyarena.strategy.application.CreateStrategy;
+import com.defistrategyarena.strategy.application.DeleteStrategy;
 import com.defistrategyarena.strategy.application.GetStrategy;
 import com.defistrategyarena.strategy.application.GetStrategyQuery;
 import com.defistrategyarena.strategy.application.ListStrategies;
 import com.defistrategyarena.strategy.application.ListStrategiesQuery;
 import com.defistrategyarena.strategy.application.StrategyPage;
+import com.defistrategyarena.strategy.application.UpdateStrategy;
 import com.defistrategyarena.strategy.domain.StrategyId;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,9 +65,13 @@ class StrategyReadsE2ETest {
                 new CreateStrategy(new CreateStrategy.CreateStrategyDeps(strategies, events));
         ListStrategies list = new ListStrategies(new ListStrategies.ListStrategiesDeps(strategies));
         GetStrategy get = new GetStrategy(new GetStrategy.GetStrategyDeps(strategies));
+        UpdateStrategy update =
+                new UpdateStrategy(new UpdateStrategy.UpdateStrategyDeps(strategies, events));
+        DeleteStrategy delete = new DeleteStrategy(new DeleteStrategy.DeleteStrategyDeps(strategies));
         http =
                 new StrategyRestAdapter(
-                        new StrategyRestAdapter.StrategyRestAdapterDeps(create, list, get));
+                        new StrategyRestAdapter.StrategyRestAdapterDeps(
+                                create, list, get, update, delete));
     }
 
     @Test

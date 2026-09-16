@@ -8,6 +8,9 @@ import com.defistrategyarena.strategy.domain.Strategy;
 import com.defistrategyarena.strategy.domain.StrategyDefinition;
 import com.defistrategyarena.strategy.domain.StrategyId;
 import com.defistrategyarena.strategy.domain.StrategyVersion;
+import com.defistrategyarena.strategy.application.DeleteStrategyCommand;
+import com.defistrategyarena.strategy.application.UpdateStrategyCommand;
+import com.defistrategyarena.strategy.application.UpdateStrategyResult;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -78,8 +81,48 @@ class StrategyDomainEdgesTest {
     }
 
     @Test
-    void sell_rejects_null_allocation() {
+    void strategy_publish_new_version_rejects_empty_rules() {
+        Strategy strategy =
+                Strategy.create(
+                        new Strategy.CreateStrategyData(
+                                "owner", new StrategyDefinition("n", List.of())));
         assertThrows(
-                IllegalArgumentException.class, () -> new StrategyDefinition.Sell("ETH-USD", null));
+                IllegalArgumentException.class,
+                () -> new Strategy.PublishNewVersionData(List.of()));
+        assertThrows(
+                IllegalArgumentException.class, () -> new Strategy.PublishNewVersionData(null));
+        assertThrows(NullPointerException.class, () -> strategy.publishNewVersion(null));
+    }
+
+    @Test
+    void strategy_version_next_increments() {
+        StrategyDefinition definition = new StrategyDefinition("n", List.of());
+        StrategyVersion next = StrategyVersion.initial(definition).next(definition);
+        assertEquals(VERSION_TWO, next.number());
+    }
+
+    @Test
+    void update_and_delete_command_factories_and_guards() {
+        StrategyId id = new StrategyId("00000000-0000-0000-0000-000000000001");
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new UpdateStrategyCommand(null, id, List.of()));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new UpdateStrategyCommand("o", null, List.of()));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new UpdateStrategyCommand("o", id, null));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new DeleteStrategyCommand(null, id));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new DeleteStrategyCommand("o", null));
+        UpdateStrategyResult result =
+                UpdateStrategyResult.create(new UpdateStrategyResult(id, VERSION_TWO));
+        assertEquals(VERSION_TWO, result.versionNumber());
+        DeleteStrategyCommand delete = DeleteStrategyCommand.create(new DeleteStrategyCommand("o", id));
+        assertEquals("o", delete.ownerId());
     }
 }

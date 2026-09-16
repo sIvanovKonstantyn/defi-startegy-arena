@@ -19,6 +19,7 @@ public final class InMemoryStrategyRepository implements StrategyRepository {
 
     private static final int EMPTY_COUNT = 0;
     private static final int SINGLE_COUNT = 1;
+    private static final String UNKNOWN_STRATEGY = "strategy not found";
 
     private final Map<String, Strategy> byId = new ConcurrentHashMap<>();
     private final Map<String, String> ownerNameIndex = new ConcurrentHashMap<>();
@@ -32,6 +33,25 @@ public final class InMemoryStrategyRepository implements StrategyRepository {
             throw new DuplicateStrategyException();
         }
         byId.put(strategy.id().value(), strategy);
+    }
+
+    @Override
+    public void update(Strategy strategy) {
+        String id = strategy.id().value();
+        if (!byId.containsKey(id)) {
+            throw new IllegalArgumentException(UNKNOWN_STRATEGY);
+        }
+        byId.put(id, strategy);
+    }
+
+    @Override
+    public void delete(StrategyId id) {
+        Strategy removed = byId.remove(id.value());
+        if (removed == null) {
+            return;
+        }
+        ownerNameIndex.remove(
+                indexKey(new OwnerStrategyName(removed.ownerId(), removed.current().definition().name())));
     }
 
     @Override

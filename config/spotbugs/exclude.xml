@@ -8,4 +8,20 @@
         <Class name="com.defistrategyarena.strategy.adapter.web.CreateStrategyHttpRequest"/>
         <Bug pattern="EI_EXPOSE_REP"/>
     </Match>
+    <Match>
+        <Class name="com.defistrategyarena.strategy.application.UpdateStrategyCommand"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="com.defistrategyarena.strategy.domain.Strategy$PublishNewVersionData"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="com.defistrategyarena.bootstrap.ApplicationComposition"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="~.*\$\w+Deps"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
 </FindBugsFilter>

@@ -7,6 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.defistrategyarena.strategy.adapter.persistence.InMemoryStrategyRepository;
 import com.defistrategyarena.strategy.adapter.web.CreateStrategyHttpRequest;
 import com.defistrategyarena.strategy.adapter.web.CreateStrategyHttpResponse;
+import com.defistrategyarena.strategy.adapter.web.DeleteStrategyHttpResponse;
+import com.defistrategyarena.strategy.adapter.web.UpdateStrategyHttpRequest;
+import com.defistrategyarena.strategy.adapter.web.UpdateStrategyHttpResponse;
 import com.defistrategyarena.strategy.application.CreateStrategy;
 import com.defistrategyarena.strategy.application.CreateStrategyCommand;
 import com.defistrategyarena.strategy.application.OwnerStrategyName;
@@ -19,21 +22,35 @@ import org.junit.jupiter.api.Test;
 class StrategyAdapterEdgesTest {
 
     private static final int STATUS_CREATED = 201;
+    private static final int STATUS_OK = 200;
+    private static final int VERSION_TWO = 2;
     private static final String OWNER = "owner-a";
     private static final String NAME = "alpha";
+    private static final String STRATEGY_ID = "id";
 
     @Test
     void http_dto_factories_and_command_factory_are_reachable() {
         CreateStrategyHttpRequest request =
                 CreateStrategyHttpRequest.create(new CreateStrategyHttpRequest(OWNER, NAME, List.of()));
         CreateStrategyHttpResponse response =
-                CreateStrategyHttpResponse.create(new CreateStrategyHttpResponse(STATUS_CREATED, "id"));
+                CreateStrategyHttpResponse.create(new CreateStrategyHttpResponse(STATUS_CREATED, STRATEGY_ID));
         CreateStrategyCommand command =
                 CreateStrategyCommand.create(
                         new CreateStrategyCommand(OWNER, new StrategyDefinition(NAME, List.of())));
         assertEquals(OWNER, request.ownerId());
         assertEquals(STATUS_CREATED, response.status());
         assertEquals(OWNER, command.ownerId());
+        UpdateStrategyHttpRequest updateRequest =
+                UpdateStrategyHttpRequest.create(new UpdateStrategyHttpRequest(List.of()));
+        UpdateStrategyHttpResponse updateResponse =
+                UpdateStrategyHttpResponse.create(
+                        new UpdateStrategyHttpResponse(STATUS_OK, STRATEGY_ID, VERSION_TWO));
+        DeleteStrategyHttpResponse deleteResponse =
+                DeleteStrategyHttpResponse.create(
+                        new DeleteStrategyHttpResponse(STATUS_OK, STRATEGY_ID));
+        assertTrue(updateRequest.rules().isEmpty());
+        assertEquals(VERSION_TWO, updateResponse.versionNumber());
+        assertEquals(STRATEGY_ID, deleteResponse.strategyId());
     }
 
     @Test
@@ -68,5 +85,20 @@ class StrategyAdapterEdgesTest {
     void null_rules_list_is_rejected_by_http_request() {
         assertThrows(
                 IllegalArgumentException.class, () -> new CreateStrategyHttpRequest(OWNER, NAME, null));
+        assertThrows(IllegalArgumentException.class, () -> new UpdateStrategyHttpRequest(null));
+    }
+
+    @Test
+    void repository_update_and_delete_edge_paths() {
+        InMemoryStrategyRepository repository = new InMemoryStrategyRepository();
+        Strategy strategy =
+                Strategy.create(
+                        new Strategy.CreateStrategyData(
+                                OWNER, new StrategyDefinition(NAME, List.of())));
+        assertThrows(IllegalArgumentException.class, () -> repository.update(strategy));
+        repository.delete(strategy.id());
+        repository.save(strategy);
+        repository.delete(strategy.id());
+        assertTrue(repository.get(strategy.id()).isEmpty());
     }
 }
