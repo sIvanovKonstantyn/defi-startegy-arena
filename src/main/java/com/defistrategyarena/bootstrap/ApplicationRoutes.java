@@ -14,6 +14,8 @@ public enum ApplicationRoutes {
     private static final int STATUS_OK = 200;
     private static final String METHOD_GET = "GET";
     private static final String METHOD_POST = "POST";
+    private static final String METHOD_PUT = "PUT";
+    private static final String METHOD_DELETE = "DELETE";
     private static final String PATH_HEALTH = "/health";
     private static final String PATH_STRATEGIES = "/strategies";
     private static final String PATH_STRATEGY_DETAIL = "/strategies/{strategyId}";
@@ -42,6 +44,14 @@ public enum ApplicationRoutes {
                 HttpRouteRegistration.create(
                         new HttpRouteRegistration(
                                 METHOD_GET, PATH_STRATEGY_DETAIL, getStrategyHandler(composition))));
+        routes.register(
+                HttpRouteRegistration.create(
+                        new HttpRouteRegistration(
+                                METHOD_PUT, PATH_STRATEGY_DETAIL, updateStrategyHandler(composition))));
+        routes.register(
+                HttpRouteRegistration.create(
+                        new HttpRouteRegistration(
+                                METHOD_DELETE, PATH_STRATEGY_DETAIL, deleteStrategyHandler(composition))));
         return routes;
     }
 
@@ -67,5 +77,15 @@ public enum ApplicationRoutes {
     private static HttpHandler getStrategyHandler(ApplicationComposition composition) {
         return new GetStrategyHttpHandler(
                 new GetStrategyHttpHandler.GetStrategyHttpHandlerDeps(composition.strategyHttp()));
+    }
+
+    private static HttpHandler updateStrategyHandler(ApplicationComposition composition) {
+        return new UpdateStrategyHttpHandler(
+                new UpdateStrategyHttpHandler.UpdateStrategyHttpHandlerDeps(composition.strategyHttp()));
+    }
+
+    private static HttpHandler deleteStrategyHandler(ApplicationComposition composition) {
+        return new DeleteStrategyHttpHandler(
+                new DeleteStrategyHttpHandler.DeleteStrategyHttpHandlerDeps(composition.strategyHttp()));
     }
 }

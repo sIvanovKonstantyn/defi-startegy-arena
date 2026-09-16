@@ -13,9 +13,11 @@ import com.defistrategyarena.strategy.adapter.web.CreateStrategyHttpRequest;
 import com.defistrategyarena.strategy.adapter.web.CreateStrategyHttpResponse;
 import com.defistrategyarena.strategy.adapter.web.StrategyRestAdapter;
 import com.defistrategyarena.strategy.application.CreateStrategy;
+import com.defistrategyarena.strategy.application.DeleteStrategy;
 import com.defistrategyarena.strategy.application.GetStrategy;
 import com.defistrategyarena.strategy.application.ListStrategies;
 import com.defistrategyarena.strategy.application.OwnerStrategyName;
+import com.defistrategyarena.strategy.application.UpdateStrategy;
 import com.defistrategyarena.strategy.domain.Privacy;
 import com.defistrategyarena.strategy.domain.Strategy;
 import com.defistrategyarena.strategy.domain.StrategyDefinition;
@@ -69,10 +71,14 @@ class CreateStrategyE2ETest {
         ListStrategies listStrategies =
                 new ListStrategies(new ListStrategies.ListStrategiesDeps(strategies));
         GetStrategy getStrategy = new GetStrategy(new GetStrategy.GetStrategyDeps(strategies));
+        UpdateStrategy updateStrategy =
+                new UpdateStrategy(new UpdateStrategy.UpdateStrategyDeps(strategies, events));
+        DeleteStrategy deleteStrategy =
+                new DeleteStrategy(new DeleteStrategy.DeleteStrategyDeps(strategies));
         http =
                 new StrategyRestAdapter(
                         new StrategyRestAdapter.StrategyRestAdapterDeps(
-                                useCase, listStrategies, getStrategy));
+                                useCase, listStrategies, getStrategy, updateStrategy, deleteStrategy));
     }
 
     @Test

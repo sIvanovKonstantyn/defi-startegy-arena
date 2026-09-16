@@ -8,6 +8,10 @@ public interface StrategyRepository {
 
     void save(Strategy strategy);
 
+    void update(Strategy strategy);
+
+    void delete(StrategyId id);
+
     Optional<Strategy> get(StrategyId id);
 
     Optional<Strategy> findByOwnerAndName(OwnerStrategyName key);
