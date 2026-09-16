@@ -1,37 +1,55 @@
 package com.defistrategyarena.bootstrap;
 
+import com.defistrategyarena.shared.events.strategy.UpdateStrategyRequested;
 import com.defistrategyarena.shared.http.handlers.BaseHandler;
 import com.defistrategyarena.shared.infra.http.HttpRequest;
-import com.defistrategyarena.strategy.adapter.web.StrategyRestAdapter;
 import com.defistrategyarena.strategy.adapter.web.UpdateStrategyHttpRequest;
-import com.defistrategyarena.strategy.adapter.web.UpdateStrategyHttpResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
-public final class UpdateStrategyHttpHandler extends BaseHandler<UpdateStrategyHttpResponse> {
+public final class UpdateStrategyHttpHandler extends BaseHandler<AcceptedHttpResponse> {
 
-    private static final int EMPTY_VERSION = 0;
+    private static final int STATUS_ACCEPTED = 202;
+    private static final int STATUS_UNAUTHORIZED = 401;
 
-    private final StrategyRestAdapter strategyHttp;
+    private final AuthenticatedStrategyPublisher publisher;
 
     public UpdateStrategyHttpHandler(UpdateStrategyHttpHandlerDeps deps) {
-        this.strategyHttp = deps.strategyHttp();
+        this.publisher = deps.publisher();
     }
 
     @Override
-    protected UpdateStrategyHttpResponse execute(HttpRequest request) throws JsonProcessingException {
-        OwnerStrategyRouteParams.OwnerStrategyRoute route = OwnerStrategyRouteParams.from(request);
+    protected AcceptedHttpResponse execute(HttpRequest request) throws JsonProcessingException {
+        String strategyId = StrategyRouteParams.from(request).strategyId().value();
         UpdateStrategyHttpRequest payload =
                 readJson(new ReadJsonCommand<>(request.body(), UpdateStrategyHttpRequest.class));
-        return strategyHttp.update(
-                new StrategyRestAdapter.UpdateStrategyHttpInput(
-                        route.ownerId(), route.strategyId(), payload));
+        return publisher.publish(
+                new AuthenticatedStrategyPublisher.AuthorizedPublish(
+                        request,
+                        context ->
+                                updateRequested(
+                                        new UpdateRequestedInput(context, strategyId, payload)),
+                        STATUS_ACCEPTED,
+                        STATUS_UNAUTHORIZED));
     }
+
+    private static UpdateStrategyRequested updateRequested(UpdateRequestedInput input) {
+        return new UpdateStrategyRequested(
+                input.context().correlationId(),
+                input.context().ownerId(),
+                input.strategyId(),
+                BootstrapRulePayloads.fromHttp(
+                        new BootstrapRulePayloads.RuleBodies(input.payload().rules())));
+    }
+
+    private record UpdateRequestedInput(
+            AuthenticatedStrategyPublisher.EventAuthContext context,
+            String strategyId,
+            UpdateStrategyHttpRequest payload) {}
 
     @Override
-    protected UpdateStrategyHttpResponse badRequestBody() {
-        return new UpdateStrategyHttpResponse(
-                STATUS_BAD_REQUEST, OwnerStrategyRouteParams.EMPTY, EMPTY_VERSION);
+    protected AcceptedHttpResponse badRequestBody() {
+        return AcceptedResponses.badRequest();
     }
 
-    public record UpdateStrategyHttpHandlerDeps(StrategyRestAdapter strategyHttp) {}
+    public record UpdateStrategyHttpHandlerDeps(AuthenticatedStrategyPublisher publisher) {}
 }

@@ -62,6 +62,7 @@ Load-test capacity probe (combined create/get/list/update): see [docs/load-tests
 
 ## Out of scope
 
-- Transactional outbox for domain events
 - Soft-delete / version history API
 - Marketdata / arena / leaderboard tables
+
+Transactional outbox for domain events: see [phase-8](./phase-8-strategy-session-async.md).

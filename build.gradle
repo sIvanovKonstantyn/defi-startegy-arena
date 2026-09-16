@@ -84,7 +84,7 @@ jooq {
                     database {
                         name = 'org.jooq.meta.extensions.ddl.DDLDatabase'
                         includes = '.*'
-                        excludes = ''
+                        excludes = 'messaging_outbox|messaging_inbox'
                         inputSchema = 'PUBLIC'
                         properties {
                             property {

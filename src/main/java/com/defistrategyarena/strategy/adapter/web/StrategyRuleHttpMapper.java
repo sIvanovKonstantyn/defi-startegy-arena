@@ -6,10 +6,10 @@ import com.defistrategyarena.strategy.domain.StrategyDefinition;
 import java.util.ArrayList;
 import java.util.List;
 
-enum StrategyRuleHttpMapper {
+public enum StrategyRuleHttpMapper {
     ;
 
-    static List<CreateStrategyHttpRequest.RuleBody> toBodies(List<StrategyDefinition.Rule> rules) {
+    public static List<CreateStrategyHttpRequest.RuleBody> toBodies(List<StrategyDefinition.Rule> rules) {
         List<CreateStrategyHttpRequest.RuleBody> bodies = new ArrayList<>();
         for (StrategyDefinition.Rule rule : rules) {
             bodies.add(toBody(rule));

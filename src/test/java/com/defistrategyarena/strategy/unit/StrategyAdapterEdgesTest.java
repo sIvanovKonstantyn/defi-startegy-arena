@@ -31,13 +31,13 @@ class StrategyAdapterEdgesTest {
     @Test
     void http_dto_factories_and_command_factory_are_reachable() {
         CreateStrategyHttpRequest request =
-                CreateStrategyHttpRequest.create(new CreateStrategyHttpRequest(OWNER, NAME, List.of()));
+                CreateStrategyHttpRequest.create(new CreateStrategyHttpRequest(NAME, List.of()));
         CreateStrategyHttpResponse response =
                 CreateStrategyHttpResponse.create(new CreateStrategyHttpResponse(STATUS_CREATED, STRATEGY_ID));
         CreateStrategyCommand command =
                 CreateStrategyCommand.create(
                         new CreateStrategyCommand(OWNER, new StrategyDefinition(NAME, List.of())));
-        assertEquals(OWNER, request.ownerId());
+        assertEquals(NAME, request.name());
         assertEquals(STATUS_CREATED, response.status());
         assertEquals(OWNER, command.ownerId());
         UpdateStrategyHttpRequest updateRequest =
@@ -84,7 +84,7 @@ class StrategyAdapterEdgesTest {
     @Test
     void null_rules_list_is_rejected_by_http_request() {
         assertThrows(
-                IllegalArgumentException.class, () -> new CreateStrategyHttpRequest(OWNER, NAME, null));
+                IllegalArgumentException.class, () -> new CreateStrategyHttpRequest(NAME, null));
         assertThrows(IllegalArgumentException.class, () -> new UpdateStrategyHttpRequest(null));
     }
 

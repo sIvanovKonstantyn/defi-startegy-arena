@@ -1,12 +1,13 @@
 package com.defistrategyarena.strategy.adapter.web;
 
+import com.defistrategyarena.shared.events.strategy.ListStrategiesCompleted;
 import com.defistrategyarena.strategy.application.ListStrategiesQuery;
 import com.defistrategyarena.strategy.application.StrategyPage;
 import com.defistrategyarena.strategy.domain.Strategy;
 import java.util.ArrayList;
 import java.util.List;
 
-enum StrategyHttpViews {
+public enum StrategyHttpViews {
     ;
 
     private static final int STATUS_OK = 200;
@@ -63,6 +64,22 @@ enum StrategyHttpViews {
                 strategy.privacy().name(),
                 strategy.current().number());
     }
+
+    public static StrategyProjection projection(Strategy strategy) {
+        StrategyViewFields fields = viewFields(strategy);
+        return new StrategyProjection(
+                fields.strategyId(), fields.name(), fields.privacy(), fields.versionNumber());
+    }
+
+    public static ListStrategiesCompleted.StrategySummaryPayload toEventSummary(Strategy strategy) {
+        StrategyProjection fields = projection(strategy);
+        return new ListStrategiesCompleted.StrategySummaryPayload(
+                fields.strategyId(), fields.name(), fields.privacy(), fields.versionNumber());
+    }
+
+    public record StrategyProjection(
+            String strategyId, String name, String privacy, int versionNumber) {}
+
 
     private static int totalPages(TotalPagesInput input) {
         if (input.totalElements() == EMPTY_TOTAL_ELEMENTS) {

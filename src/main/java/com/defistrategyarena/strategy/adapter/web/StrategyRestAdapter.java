@@ -1,16 +1,12 @@
 package com.defistrategyarena.strategy.adapter.web;
 
-import com.defistrategyarena.strategy.application.CreateStrategy;
 import com.defistrategyarena.strategy.application.CreateStrategyCommand;
-import com.defistrategyarena.strategy.application.DeleteStrategy;
 import com.defistrategyarena.strategy.application.DeleteStrategyCommand;
 import com.defistrategyarena.strategy.application.DuplicateStrategyException;
-import com.defistrategyarena.strategy.application.GetStrategy;
 import com.defistrategyarena.strategy.application.GetStrategyQuery;
-import com.defistrategyarena.strategy.application.ListStrategies;
 import com.defistrategyarena.strategy.application.ListStrategiesQuery;
 import com.defistrategyarena.strategy.application.StrategyPage;
-import com.defistrategyarena.strategy.application.UpdateStrategy;
+import com.defistrategyarena.strategy.application.StrategyUseCases;
 import com.defistrategyarena.strategy.application.UpdateStrategyCommand;
 import com.defistrategyarena.strategy.application.UpdateStrategyResult;
 import com.defistrategyarena.strategy.domain.Strategy;
@@ -30,26 +26,20 @@ public final class StrategyRestAdapter {
     private static final int EMPTY_VERSION = 0;
     private static final String EMPTY = "";
 
-    private final CreateStrategy createStrategy;
-    private final ListStrategies listStrategies;
-    private final GetStrategy getStrategy;
-    private final UpdateStrategy updateStrategy;
-    private final DeleteStrategy deleteStrategy;
+    private final StrategyUseCases useCases;
 
     public StrategyRestAdapter(StrategyRestAdapterDeps deps) {
-        this.createStrategy = deps.createStrategy();
-        this.listStrategies = deps.listStrategies();
-        this.getStrategy = deps.getStrategy();
-        this.updateStrategy = deps.updateStrategy();
-        this.deleteStrategy = deps.deleteStrategy();
+        this.useCases = deps.useCases();
     }
 
-    public CreateStrategyHttpResponse create(CreateStrategyHttpRequest request) {
+    public CreateStrategyHttpResponse create(CreateStrategyHttpInput input) {
         try {
             StrategyId id =
-                    createStrategy.execute(
-                            CreateStrategyCommand.create(
-                                    new CreateStrategyCommand(request.ownerId(), toDefinition(request))));
+                    useCases.createStrategy()
+                            .execute(
+                                    CreateStrategyCommand.create(
+                                            new CreateStrategyCommand(
+                                                    input.ownerId(), toDefinition(input.request()))));
             return new CreateStrategyHttpResponse(STATUS_CREATED, id.value());
         } catch (DuplicateStrategyException exception) {
             return new CreateStrategyHttpResponse(STATUS_CONFLICT, EMPTY);
@@ -59,12 +49,12 @@ public final class StrategyRestAdapter {
     }
 
     public StrategyListHttpResponse list(ListStrategiesQuery query) {
-        StrategyPage page = listStrategies.execute(query);
+        StrategyPage page = useCases.listStrategies().execute(query);
         return StrategyHttpViews.toListResponse(new StrategyHttpViews.ListResponseInput(query, page));
     }
 
     public StrategyDetailHttpResponse get(GetStrategyQuery query) {
-        Optional<Strategy> found = getStrategy.execute(query);
+        Optional<Strategy> found = useCases.getStrategy().execute(query);
         if (found.isEmpty()) {
             return StrategyHttpViews.notFoundDetail();
         }
@@ -75,8 +65,10 @@ public final class StrategyRestAdapter {
         try {
             List<StrategyDefinition.Rule> rules = toRules(input.request().rules());
             Optional<UpdateStrategyResult> result =
-                    updateStrategy.execute(
-                            new UpdateStrategyCommand(input.ownerId(), input.strategyId(), rules));
+                    useCases.updateStrategy()
+                            .execute(
+                                    new UpdateStrategyCommand(
+                                            input.ownerId(), input.strategyId(), rules));
             if (result.isEmpty()) {
                 return new UpdateStrategyHttpResponse(STATUS_NOT_FOUND, EMPTY, EMPTY_VERSION);
             }
@@ -91,8 +83,9 @@ public final class StrategyRestAdapter {
     public DeleteStrategyHttpResponse delete(DeleteStrategyHttpInput input) {
         try {
             Optional<StrategyId> deleted =
-                    deleteStrategy.execute(
-                            new DeleteStrategyCommand(input.ownerId(), input.strategyId()));
+                    useCases.deleteStrategy()
+                            .execute(
+                                    new DeleteStrategyCommand(input.ownerId(), input.strategyId()));
             if (deleted.isEmpty()) {
                 return new DeleteStrategyHttpResponse(STATUS_NOT_FOUND, EMPTY);
             }
@@ -114,15 +107,12 @@ public final class StrategyRestAdapter {
         return List.copyOf(rules);
     }
 
+    public record CreateStrategyHttpInput(String ownerId, CreateStrategyHttpRequest request) {}
+
     public record UpdateStrategyHttpInput(
             String ownerId, StrategyId strategyId, UpdateStrategyHttpRequest request) {}
 
     public record DeleteStrategyHttpInput(String ownerId, StrategyId strategyId) {}
 
-    public record StrategyRestAdapterDeps(
-            CreateStrategy createStrategy,
-            ListStrategies listStrategies,
-            GetStrategy getStrategy,
-            UpdateStrategy updateStrategy,
-            DeleteStrategy deleteStrategy) {}
+    public record StrategyRestAdapterDeps(StrategyUseCases useCases) {}
 }

@@ -1,39 +1,57 @@
 package com.defistrategyarena.bootstrap;
 
+import com.defistrategyarena.shared.events.strategy.CreateStrategyRequested;
 import com.defistrategyarena.shared.http.handlers.BaseHandler;
 import com.defistrategyarena.shared.infra.http.HttpRequest;
 import com.defistrategyarena.strategy.adapter.web.CreateStrategyHttpRequest;
-import com.defistrategyarena.strategy.adapter.web.CreateStrategyHttpResponse;
-import com.defistrategyarena.strategy.adapter.web.StrategyRestAdapter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public final class CreateStrategyHttpHandler extends BaseHandler<CreateStrategyHttpResponse> {
+public final class CreateStrategyHttpHandler extends BaseHandler<AcceptedHttpResponse> {
 
-    private static final String EMPTY_STRATEGY_ID = "";
+    private static final int STATUS_ACCEPTED = 202;
+    private static final int STATUS_UNAUTHORIZED = 401;
 
-    private final StrategyRestAdapter strategyHttp;
+    private final AuthenticatedStrategyPublisher publisher;
 
     public CreateStrategyHttpHandler(CreateStrategyHttpHandlerDeps deps) {
-        this.strategyHttp = deps.strategyHttp();
+        this.publisher = deps.publisher();
     }
 
-    CreateStrategyHttpHandler(StrategyRestAdapter strategyHttp, ObjectMapper objectMapper) {
+    CreateStrategyHttpHandler(AuthenticatedStrategyPublisher publisher, ObjectMapper objectMapper) {
         super(objectMapper);
-        this.strategyHttp = strategyHttp;
+        this.publisher = publisher;
     }
 
     @Override
-    protected CreateStrategyHttpResponse execute(HttpRequest request) throws JsonProcessingException {
+    protected AcceptedHttpResponse execute(HttpRequest request) throws JsonProcessingException {
         CreateStrategyHttpRequest payload =
                 readJson(new ReadJsonCommand<>(request.body(), CreateStrategyHttpRequest.class));
-        return strategyHttp.create(payload);
+        return publisher.publish(
+                new AuthenticatedStrategyPublisher.AuthorizedPublish(
+                        request,
+                        context -> createRequested(new CreateRequestedInput(context, payload)),
+                        STATUS_ACCEPTED,
+                        STATUS_UNAUTHORIZED));
     }
+
+    private static CreateStrategyRequested createRequested(CreateRequestedInput input) {
+        return new CreateStrategyRequested(
+                input.context().correlationId(),
+                input.context().ownerId(),
+                input.payload().name(),
+                BootstrapRulePayloads.fromHttp(
+                        new BootstrapRulePayloads.RuleBodies(input.payload().rules())));
+    }
+
+    private record CreateRequestedInput(
+            AuthenticatedStrategyPublisher.EventAuthContext context,
+            CreateStrategyHttpRequest payload) {}
 
     @Override
-    protected CreateStrategyHttpResponse badRequestBody() {
-        return new CreateStrategyHttpResponse(STATUS_BAD_REQUEST, EMPTY_STRATEGY_ID);
+    protected AcceptedHttpResponse badRequestBody() {
+        return AcceptedResponses.badRequest();
     }
 
-    public record CreateStrategyHttpHandlerDeps(StrategyRestAdapter strategyHttp) {}
+    public record CreateStrategyHttpHandlerDeps(AuthenticatedStrategyPublisher publisher) {}
 }

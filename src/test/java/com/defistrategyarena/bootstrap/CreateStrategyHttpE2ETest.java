@@ -4,12 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.defistrategyarena.identity.adapter.web.SignupHttpRequest;
 import com.defistrategyarena.shared.infra.http.HttpServerConfig;
 import com.defistrategyarena.shared.infra.http.HttpServerRuntime;
 import com.defistrategyarena.shared.infra.http.HttpServerStartData;
 import com.defistrategyarena.shared.infra.http.jetty.JettyHttpServerBootstrap;
-import com.defistrategyarena.strategy.application.OwnerStrategyName;
-import com.defistrategyarena.strategy.domain.StrategyId;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -20,58 +19,77 @@ import org.junit.jupiter.api.Test;
 class CreateStrategyHttpE2ETest {
 
     private static final int EPHEMERAL_PORT = 0;
-    private static final int STATUS_CREATED = 201;
-    private static final int STATUS_CONFLICT = 409;
+    private static final int STATUS_ACCEPTED = 202;
+    private static final int STATUS_UNAUTHORIZED = 401;
     private static final int STATUS_BAD_REQUEST = 400;
     private static final int SINGLE = 1;
+    private static final int EMPTY_STORE = 0;
     private static final String PATH = "/strategies";
     private static final String JSON_TYPE = "application/json";
-    private static final String OWNER = "user-42";
+    private static final String AUTHORIZATION = "Authorization";
+    private static final String BEARER_PREFIX = "Bearer ";
+    private static final String EMAIL = "create-e2e@test.co";
+    private static final String PASSWORD = "secret-value";
+    private static final String DISPLAY_NAME = "CreateE2E";
     private static final String NAME = "rsi-bounce";
     private static final String VALID_BODY =
-            "{\"ownerId\":\""
-                    + OWNER
-                    + "\",\"name\":\""
+            "{\"name\":\""
                     + NAME
                     + "\",\"rules\":[{\"id\":\"r1\",\"conditionType\":\"price_above\",\"actionType\":\"hold\",\"instrument\":\"ETH-USD\",\"indicator\":\"\",\"threshold\":\"3000\",\"allocationPercent\":\"\"}]}";
     private static final String INVALID_BODY = "{not-json";
 
     @Test
     void creates_strategy_over_jetty_and_persists() throws Exception {
-        ApplicationComposition composition = ApplicationComposition.createDefault();
-        try (HttpServerRuntime runtime = start(composition)) {
-            HttpResponse<String> response = post(runtime.port(), VALID_BODY);
-            assertEquals(STATUS_CREATED, response.statusCode());
-            assertTrue(response.body().contains("strategyId"));
-            assertFalse(response.body().contains("\"strategyId\":\"\""));
-            String strategyId = extractStrategyId(response.body());
-            assertTrue(composition.strategies().get(new StrategyId(strategyId)).isPresent());
+        try (ApplicationComposition composition = ApplicationComposition.createDefault();
+                HttpServerRuntime runtime = start(composition)) {
+            String token = signupToken(composition);
+            HttpResponse<String> response = post(runtime.port(), VALID_BODY, token);
+            assertEquals(STATUS_ACCEPTED, response.statusCode());
+            assertTrue(response.body().contains("correlationId"));
+            assertFalse(response.body().contains("\"correlationId\":\"\""));
+            assertFalse(response.body().contains("ownerId"));
+            assertEquals(SINGLE, composition.strategies().size());
         }
     }
 
     @Test
-    void rejects_duplicate_over_jetty() throws Exception {
-        ApplicationComposition composition = ApplicationComposition.createDefault();
-        try (HttpServerRuntime runtime = start(composition)) {
-            assertEquals(STATUS_CREATED, post(runtime.port(), VALID_BODY).statusCode());
-            HttpResponse<String> second = post(runtime.port(), VALID_BODY);
-            assertEquals(STATUS_CONFLICT, second.statusCode());
-            assertEquals(
-                    SINGLE,
-                    composition
-                            .strategies()
-                            .countByOwnerAndName(new OwnerStrategyName(OWNER, NAME)));
+    void duplicate_name_still_accepted_but_keeps_single_row() throws Exception {
+        try (ApplicationComposition composition = ApplicationComposition.createDefault();
+                HttpServerRuntime runtime = start(composition)) {
+            String token = signupToken(composition);
+            assertEquals(STATUS_ACCEPTED, post(runtime.port(), VALID_BODY, token).statusCode());
+            HttpResponse<String> second = post(runtime.port(), VALID_BODY, token);
+            assertEquals(STATUS_ACCEPTED, second.statusCode());
+            assertEquals(SINGLE, composition.strategies().size());
+        }
+    }
+
+    @Test
+    void rejects_missing_bearer() throws Exception {
+        try (ApplicationComposition composition = ApplicationComposition.createDefault();
+                HttpServerRuntime runtime = start(composition)) {
+            HttpResponse<String> response = postWithoutAuth(runtime.port(), VALID_BODY);
+            assertEquals(STATUS_UNAUTHORIZED, response.statusCode());
+            assertEquals(EMPTY_STORE, composition.strategies().size());
         }
     }
 
     @Test
     void rejects_invalid_json_over_jetty() throws Exception {
-        ApplicationComposition composition = ApplicationComposition.createDefault();
-        try (HttpServerRuntime runtime = start(composition)) {
-            HttpResponse<String> response = post(runtime.port(), INVALID_BODY);
+        try (ApplicationComposition composition = ApplicationComposition.createDefault();
+                HttpServerRuntime runtime = start(composition)) {
+            String token = signupToken(composition);
+            HttpResponse<String> response = post(runtime.port(), INVALID_BODY, token);
             assertEquals(STATUS_BAD_REQUEST, response.statusCode());
-            assertEquals(0, composition.strategies().size());
+            assertEquals(EMPTY_STORE, composition.strategies().size());
         }
+    }
+
+    private static String signupToken(ApplicationComposition composition) {
+        return composition
+                .identityHttp()
+                .signup(new SignupHttpRequest(EMAIL, PASSWORD, DISPLAY_NAME))
+                .accessToken();
     }
 
     private static HttpServerRuntime start(ApplicationComposition composition) {
@@ -83,19 +101,22 @@ class CreateStrategyHttpE2ETest {
                                         ApplicationRoutes.createDefaultRoutes(composition))));
     }
 
-    private static HttpResponse<String> post(int port, String body) throws Exception {
+    private static HttpResponse<String> post(int port, String body, String token) throws Exception {
+        HttpRequest request =
+                HttpRequest.newBuilder(URI.create("http://localhost:" + port + PATH))
+                        .header("Content-Type", JSON_TYPE)
+                        .header(AUTHORIZATION, BEARER_PREFIX + token)
+                        .POST(HttpRequest.BodyPublishers.ofString(body))
+                        .build();
+        return HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+    }
+
+    private static HttpResponse<String> postWithoutAuth(int port, String body) throws Exception {
         HttpRequest request =
                 HttpRequest.newBuilder(URI.create("http://localhost:" + port + PATH))
                         .header("Content-Type", JSON_TYPE)
                         .POST(HttpRequest.BodyPublishers.ofString(body))
                         .build();
         return HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
-    }
-
-    private static String extractStrategyId(String json) {
-        String marker = "\"strategyId\":\"";
-        int start = json.indexOf(marker) + marker.length();
-        int end = json.indexOf('"', start);
-        return json.substring(start, end);
     }
 }

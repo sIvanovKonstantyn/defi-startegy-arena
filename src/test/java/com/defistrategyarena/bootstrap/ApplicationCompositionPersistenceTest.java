@@ -23,6 +23,9 @@ class ApplicationCompositionPersistenceTest {
         try (ApplicationComposition composition = ApplicationComposition.createDefault()) {
             assertSame(composition.strategies(), composition.strategies());
             assertNotNull(composition.identityHttp());
+            assertNotNull(composition.getCurrentUser());
+            assertNotNull(composition.strategyPublisher());
+            assertNotNull(composition.outboxRelay());
         }
     }
 }
