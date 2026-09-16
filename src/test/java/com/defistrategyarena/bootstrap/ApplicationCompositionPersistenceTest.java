@@ -14,6 +14,7 @@ class ApplicationCompositionPersistenceTest {
             assertNotNull(composition.strategies());
             assertNotNull(composition.events());
             assertNotNull(composition.strategyHttp());
+            assertNotNull(composition.identityHttp());
         }
     }
 
@@ -21,6 +22,7 @@ class ApplicationCompositionPersistenceTest {
     void create_default_is_memory() {
         try (ApplicationComposition composition = ApplicationComposition.createDefault()) {
             assertSame(composition.strategies(), composition.strategies());
+            assertNotNull(composition.identityHttp());
         }
     }
 }

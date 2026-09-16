@@ -2,6 +2,7 @@ package com.defistrategyarena.shared.unit.infra.http;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.defistrategyarena.shared.infra.http.HttpRequest;
 import org.junit.jupiter.api.Test;
@@ -59,5 +60,46 @@ class HttpRequestTest {
                                 java.util.Map.of("strategyId", "x")));
         assertEquals("o", request.query().get("ownerId"));
         assertEquals("x", request.pathVariables().get("strategyId"));
+    }
+
+    @Test
+    void rejects_null_headers_map() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () ->
+                        new HttpRequest(
+                                "GET",
+                                "/health",
+                                "",
+                                java.util.Map.of(),
+                                java.util.Map.of(),
+                                null));
+    }
+
+    @Test
+    void authorization_header_is_case_insensitive() {
+        HttpRequest request =
+                new HttpRequest(
+                        "GET",
+                        "/auth/me",
+                        "",
+                        java.util.Map.of(),
+                        java.util.Map.of(),
+                        java.util.Map.of("Authorization", "Bearer token-1"));
+        assertEquals("Bearer token-1", request.authorizationHeader().orElseThrow());
+        assertTrue(HttpRequest.create(request).authorizationHeader().isPresent());
+    }
+
+    @Test
+    void blank_authorization_header_is_absent() {
+        HttpRequest request =
+                new HttpRequest(
+                        "GET",
+                        "/auth/me",
+                        "",
+                        java.util.Map.of(),
+                        java.util.Map.of(),
+                        java.util.Map.of("Authorization", " "));
+        assertTrue(request.authorizationHeader().isEmpty());
     }
 }

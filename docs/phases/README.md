@@ -10,3 +10,4 @@ Ordered implementation slices. Each phase starts with **approved context e2e sce
 | 4 — List and get strategies | [phase-4-strategy-reads.md](./phase-4-strategy-reads.md) | Implemented |
 | 5 — Update and delete strategy | [phase-5-strategy-update-delete.md](./phase-5-strategy-update-delete.md) | Implemented |
 | 6 — Postgres + jOOQ + Flyway | [phase-6-postgres-persistence.md](./phase-6-postgres-persistence.md) | Implemented |
+| 7 — Identity sign-up / sign-in | [phase-7-identity-auth.md](./phase-7-identity-auth.md) | Implemented |

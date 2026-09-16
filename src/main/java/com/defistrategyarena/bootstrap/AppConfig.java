@@ -17,7 +17,8 @@ public record AppConfig(
         PersistenceMode persistenceMode,
         int httpPort,
         JdbcSettings jdbc,
-        HikariPoolSettings hikari) {
+        HikariPoolSettings hikari,
+        long authSessionTtlSeconds) {
 
     public static final String PERSISTENCE_MODE = "persistence.mode";
     public static final String HTTP_PORT = "http.port";
@@ -31,6 +32,7 @@ public record AppConfig(
     public static final String HIKARI_IDLE_TIMEOUT_MS = "hikari.idleTimeoutMs";
     public static final String HIKARI_MAX_LIFETIME_MS = "hikari.maxLifetimeMs";
     public static final String HIKARI_POOL_NAME = "hikari.poolName";
+    public static final String AUTH_SESSION_TTL_SECONDS = "auth.sessionTtlSeconds";
 
     private static final String RESOURCE = "/app.properties";
     private static final String RESOURCE_MISSING = "app.properties not found on classpath";
@@ -68,12 +70,17 @@ public record AppConfig(
                                 Long.parseLong(values.require(new PropertyKey(HIKARI_CONNECTION_TIMEOUT_MS))),
                                 Long.parseLong(values.require(new PropertyKey(HIKARI_IDLE_TIMEOUT_MS))),
                                 Long.parseLong(values.require(new PropertyKey(HIKARI_MAX_LIFETIME_MS))),
-                                values.require(new PropertyKey(HIKARI_POOL_NAME)))));
+                                values.require(new PropertyKey(HIKARI_POOL_NAME)))),
+                Long.parseLong(values.require(new PropertyKey(AUTH_SESSION_TTL_SECONDS))));
     }
 
     public static AppConfig create(AppConfig draft) {
         return new AppConfig(
-                draft.persistenceMode(), draft.httpPort(), draft.jdbc(), draft.hikari());
+                draft.persistenceMode(),
+                draft.httpPort(),
+                draft.jdbc(),
+                draft.hikari(),
+                draft.authSessionTtlSeconds());
     }
 
     private static PersistenceMode parseMode(ModeText text) {

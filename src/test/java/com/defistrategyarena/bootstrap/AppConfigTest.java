@@ -28,6 +28,9 @@ class AppConfigTest {
     private static final long DEFAULT_TIMEOUT = 5000L;
     private static final long DEFAULT_IDLE_MS = 600000L;
     private static final long DEFAULT_LIFE_MS = 1800000L;
+    private static final long DEFAULT_SESSION_TTL = 86400L;
+    private static final String SESSION_TTL = "3600";
+    private static final long SESSION_TTL_LONG = 3600L;
 
     @Test
     void loads_defaults_from_classpath_properties() {
@@ -44,6 +47,7 @@ class AppConfigTest {
         assertEquals(DEFAULT_IDLE_MS, config.hikari().idleTimeoutMs());
         assertEquals(DEFAULT_LIFE_MS, config.hikari().maxLifetimeMs());
         assertEquals("dsa-strategy", config.hikari().poolName());
+        assertEquals(DEFAULT_SESSION_TTL, config.authSessionTtlSeconds());
     }
 
     @Test
@@ -62,6 +66,7 @@ class AppConfigTest {
         env.put("DSA_JDBC_USER", JDBC_USER);
         env.put("DSA_JDBC_PASSWORD", JDBC_PASSWORD);
         env.put("DSA_HIKARI_MAXIMUM_POOL_SIZE", POOL_SIZE);
+        env.put("DSA_AUTH_SESSION_TTL_SECONDS", SESSION_TTL);
         AppConfig config = AppConfig.load(LoadRequest.fromEnvironment(env::get));
         assertEquals(PersistenceMode.POSTGRES, config.persistenceMode());
         assertEquals(PORT_9090_INT, config.httpPort());
@@ -69,6 +74,7 @@ class AppConfigTest {
         assertEquals(JDBC_USER, config.jdbc().user());
         assertEquals(JDBC_PASSWORD, config.jdbc().password());
         assertEquals(POOL_SIZE_INT, config.hikari().maximumPoolSize());
+        assertEquals(SESSION_TTL_LONG, config.authSessionTtlSeconds());
     }
 
     @Test

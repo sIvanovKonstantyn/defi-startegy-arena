@@ -79,6 +79,39 @@ class JettyHttpServerBootstrapTest {
         }
     }
 
+    @Test
+    void forwards_authorization_header_to_handler() throws Exception {
+        InMemoryHttpRouteRegistry routes = new InMemoryHttpRouteRegistry();
+        routes.register(
+                HttpRouteRegistration.create(
+                        new HttpRouteRegistration(METHOD_GET, PATH_ECHO, request -> {
+                            String auth = request.authorizationHeader().orElse(ECHO_BODY);
+                            return new HttpResponse(STATUS_OK, PLAIN_TEXT, auth);
+                        })));
+        HttpServerStartData startData =
+                HttpServerStartData.create(
+                        new HttpServerStartData(new HttpServerConfig(0), routes));
+        JettyHttpServerBootstrap bootstrap = new JettyHttpServerBootstrap();
+        try (HttpServerRuntime runtime = bootstrap.start(startData)) {
+            HttpClient client = HttpClient.newHttpClient();
+            URI echoUri = URI.create("http://localhost:" + runtime.port() + PATH_ECHO);
+            java.net.http.HttpRequest echoRequest =
+                    java.net.http.HttpRequest.newBuilder(echoUri)
+                            .header("Authorization", "Bearer jetty-token")
+                            .GET()
+                            .build();
+            String body = client.send(echoRequest, BodyHandlers.ofString()).body();
+            assertEquals("Bearer jetty-token", body);
+
+            java.net.http.HttpRequest blankAuth =
+                    java.net.http.HttpRequest.newBuilder(echoUri)
+                            .header("Authorization", " ")
+                            .GET()
+                            .build();
+            assertEquals(ECHO_BODY, client.send(blankAuth, BodyHandlers.ofString()).body());
+        }
+    }
+
     private static HttpResponse echo(com.defistrategyarena.shared.infra.http.HttpRequest request) {
         java.util.Objects.requireNonNull(request);
         return new HttpResponse(STATUS_OK, PLAIN_TEXT, ECHO_BODY);
