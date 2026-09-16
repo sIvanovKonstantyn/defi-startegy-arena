@@ -67,26 +67,33 @@ public enum ApplicationRoutes {
 
     private static HttpHandler createStrategyHandler(ApplicationComposition composition) {
         return new CreateStrategyHttpHandler(
-                new CreateStrategyHttpHandler.CreateStrategyHttpHandlerDeps(composition.strategyHttp()));
+                new CreateStrategyHttpHandler.CreateStrategyHttpHandlerDeps(
+                        composition.strategyPublisher()));
     }
 
     private static HttpHandler listStrategiesHandler(ApplicationComposition composition) {
         return new ListStrategiesHttpHandler(
-                new ListStrategiesHttpHandler.ListStrategiesHttpHandlerDeps(composition.strategyHttp()));
+                new ListStrategiesHttpHandler.ListStrategiesHttpHandlerDeps(
+                        composition.strategyPublisher()));
     }
 
     private static HttpHandler getStrategyHandler(ApplicationComposition composition) {
-        return new GetStrategyHttpHandler(
-                new GetStrategyHttpHandler.GetStrategyHttpHandlerDeps(composition.strategyHttp()));
+        return new PathIdStrategyHttpHandler(
+                new PathIdStrategyHttpHandler.PathIdStrategyHttpHandlerDeps(
+                        composition.strategyPublisher(),
+                        PathIdStrategyHttpHandler.PathIdEventKind.GET));
     }
 
     private static HttpHandler updateStrategyHandler(ApplicationComposition composition) {
         return new UpdateStrategyHttpHandler(
-                new UpdateStrategyHttpHandler.UpdateStrategyHttpHandlerDeps(composition.strategyHttp()));
+                new UpdateStrategyHttpHandler.UpdateStrategyHttpHandlerDeps(
+                        composition.strategyPublisher()));
     }
 
     private static HttpHandler deleteStrategyHandler(ApplicationComposition composition) {
-        return new DeleteStrategyHttpHandler(
-                new DeleteStrategyHttpHandler.DeleteStrategyHttpHandlerDeps(composition.strategyHttp()));
+        return new PathIdStrategyHttpHandler(
+                new PathIdStrategyHttpHandler.PathIdStrategyHttpHandlerDeps(
+                        composition.strategyPublisher(),
+                        PathIdStrategyHttpHandler.PathIdEventKind.DELETE));
     }
 }

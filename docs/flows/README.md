@@ -15,3 +15,4 @@ Each file should include purpose, actors, a Mermaid sequence, and a text walkthr
 | Strategy Postgres persistence (phase 6) | [strategy-persistence-postgres.md](./strategy-persistence-postgres.md) |
 | Strategy CRUD load-test capacity | [strategy-crud-load-test.md](./strategy-crud-load-test.md) |
 | Identity auth (sign-up / sign-in) | [identity-auth.md](./identity-auth.md) |
+| Strategy authenticated async (outbox) | [strategy-authenticated-async.md](./strategy-authenticated-async.md) |

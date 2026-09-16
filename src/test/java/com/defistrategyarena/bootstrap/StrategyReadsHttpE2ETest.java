@@ -1,12 +1,17 @@
 package com.defistrategyarena.bootstrap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.defistrategyarena.identity.adapter.web.SignupHttpRequest;
+import com.defistrategyarena.identity.application.AccessTokenQuery;
 import com.defistrategyarena.shared.infra.http.HttpServerConfig;
 import com.defistrategyarena.shared.infra.http.HttpServerRuntime;
 import com.defistrategyarena.shared.infra.http.HttpServerStartData;
 import com.defistrategyarena.shared.infra.http.jetty.JettyHttpServerBootstrap;
+import com.defistrategyarena.strategy.application.ListStrategiesQuery;
+import com.defistrategyarena.strategy.domain.Strategy;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -20,89 +25,92 @@ import org.junit.jupiter.api.Test;
 class StrategyReadsHttpE2ETest {
 
     private static final int EPHEMERAL_PORT = 0;
-    private static final int STATUS_OK = 200;
-    private static final int STATUS_CREATED = 201;
+    private static final int STATUS_ACCEPTED = 202;
+    private static final int STATUS_UNAUTHORIZED = 401;
     private static final int STATUS_BAD_REQUEST = 400;
-    private static final int STATUS_NOT_FOUND = 404;
-    private static final String OWNER = "owner-http-reads";
-    private static final String OTHER = "other-http";
+    private static final int TWO_STRATEGIES = 2;
+    private static final int PAGE_SIZE_ONE = 1;
+    private static final String EMAIL = "reads-e2e@test.co";
+    private static final String PASSWORD = "secret-value";
+    private static final String DISPLAY_NAME = "ReadsE2E";
     private static final String JSON_TYPE = "application/json";
+    private static final String AUTHORIZATION = "Authorization";
+    private static final String BEARER_PREFIX = "Bearer ";
     private static final String QUERY_START = "?";
     private static final String QUERY_SEP = "&";
     private static final String QUERY_EQ = "=";
     private static final String CREATE_BODY_A =
-            "{\"ownerId\":\""
-                    + OWNER
-                    + "\",\"name\":\"alpha\",\"rules\":[{\"id\":\"r1\",\"conditionType\":\"price_above\",\"actionType\":\"hold\",\"instrument\":\"ETH-USD\",\"indicator\":\"\",\"threshold\":\"3000\",\"allocationPercent\":\"\"}]}";
+            "{\"name\":\"alpha\",\"rules\":[{\"id\":\"r1\",\"conditionType\":\"price_above\",\"actionType\":\"hold\",\"instrument\":\"ETH-USD\",\"indicator\":\"\",\"threshold\":\"3000\",\"allocationPercent\":\"\"}]}";
     private static final String CREATE_BODY_B =
-            "{\"ownerId\":\""
-                    + OWNER
-                    + "\",\"name\":\"beta\",\"rules\":[{\"id\":\"r1\",\"conditionType\":\"price_above\",\"actionType\":\"hold\",\"instrument\":\"ETH-USD\",\"indicator\":\"\",\"threshold\":\"3000\",\"allocationPercent\":\"\"}]}";
+            "{\"name\":\"beta\",\"rules\":[{\"id\":\"r1\",\"conditionType\":\"price_above\",\"actionType\":\"hold\",\"instrument\":\"ETH-USD\",\"indicator\":\"\",\"threshold\":\"3000\",\"allocationPercent\":\"\"}]}";
 
     @Test
-    void lists_and_gets_over_jetty() throws Exception {
-        ApplicationComposition composition = ApplicationComposition.createDefault();
-        try (HttpServerRuntime runtime = start(composition)) {
-            assertEquals(STATUS_CREATED, post(runtime.port(), "/strategies", CREATE_BODY_A).statusCode());
-            assertEquals(STATUS_CREATED, post(runtime.port(), "/strategies", CREATE_BODY_B).statusCode());
+    void lists_and_gets_over_jetty_with_bearer() throws Exception {
+        try (ApplicationComposition composition = ApplicationComposition.createDefault();
+                HttpServerRuntime runtime = start(composition)) {
+            String token = signupToken(composition);
+            String ownerId = ownerId(composition, token);
+            assertEquals(STATUS_ACCEPTED, post(runtime.port(), "/strategies", CREATE_BODY_A, token).statusCode());
+            assertEquals(STATUS_ACCEPTED, post(runtime.port(), "/strategies", CREATE_BODY_B, token).statusCode());
+            assertEquals(TWO_STRATEGIES, composition.strategies().size());
+
+            Strategy first =
+                    composition
+                            .strategies()
+                            .listByOwner(
+                                    new ListStrategiesQuery(
+                                            ownerId,
+                                            ListStrategiesQuery.DEFAULT_PAGE,
+                                            PAGE_SIZE_ONE,
+                                            ListStrategiesQuery.SORT_NAME,
+                                            ListStrategiesQuery.ORDER_ASC))
+                            .items()
+                            .getFirst();
 
             HttpResponse<String> list =
                     get(
                             runtime.port(),
                             "/strategies",
-                            Map.of(
-                                    "ownerId", OWNER,
-                                    "page", "0",
-                                    "size", "1",
-                                    "sort", "name",
-                                    "order", "asc"));
-            assertEquals(STATUS_OK, list.statusCode());
-            assertTrue(list.body().contains("\"totalElements\":2"));
-            assertTrue(list.body().contains("\"name\":\"alpha\""));
+                            Map.of("page", "0", "size", "1", "sort", "name", "order", "asc"),
+                            token);
+            assertEquals(STATUS_ACCEPTED, list.statusCode());
+            assertTrue(list.body().contains("correlationId"));
+            assertFalse(list.body().contains("ownerId"));
 
-            String strategyId = extractStrategyId(list.body());
             HttpResponse<String> detail =
-                    get(runtime.port(), "/strategies/" + strategyId, Map.of("ownerId", OWNER));
-            assertEquals(STATUS_OK, detail.statusCode());
-            assertTrue(detail.body().contains("\"conditionType\":\"price_above\""));
+                    get(runtime.port(), "/strategies/" + first.id().value(), Map.of(), token);
+            assertEquals(STATUS_ACCEPTED, detail.statusCode());
+            assertTrue(detail.body().contains("correlationId"));
 
-            HttpResponse<String> forbidden =
-                    get(runtime.port(), "/strategies/" + strategyId, Map.of("ownerId", OTHER));
-            assertEquals(STATUS_NOT_FOUND, forbidden.statusCode());
-
-            HttpResponse<String> badPage =
-                    get(
-                            runtime.port(),
-                            "/strategies",
-                            Map.of("ownerId", OWNER, "page", "-1", "size", "20"));
-            assertEquals(STATUS_BAD_REQUEST, badPage.statusCode());
-
-            HttpResponse<String> blankOwner =
-                    get(runtime.port(), "/strategies", Map.of("ownerId", " "));
-            assertEquals(STATUS_BAD_REQUEST, blankOwner.statusCode());
-
-            HttpResponse<String> missingOwner = get(runtime.port(), "/strategies", Map.of());
-            assertEquals(STATUS_BAD_REQUEST, missingOwner.statusCode());
+            HttpResponse<String> unauthorized =
+                    getWithoutAuth(runtime.port(), "/strategies", Map.of());
+            assertEquals(STATUS_UNAUTHORIZED, unauthorized.statusCode());
 
             HttpResponse<String> badInt =
-                    get(
-                            runtime.port(),
-                            "/strategies",
-                            Map.of("ownerId", OWNER, "page", "x", "size", "20"));
+                    get(runtime.port(), "/strategies", Map.of("page", "x", "size", "20"), token);
             assertEquals(STATUS_BAD_REQUEST, badInt.statusCode());
 
-            HttpResponse<String> defaults =
-                    get(runtime.port(), "/strategies", Map.of("ownerId", OWNER));
-            assertEquals(STATUS_OK, defaults.statusCode());
-            assertTrue(defaults.body().contains("\"sort\":\"name\""));
+            HttpResponse<String> defaults = get(runtime.port(), "/strategies", Map.of(), token);
+            assertEquals(STATUS_ACCEPTED, defaults.statusCode());
 
-            HttpResponse<String> flagOnly =
-                    sendGet(runtime.port(), "/strategies?ownerId=" + OWNER + "&debug");
-            assertEquals(STATUS_OK, flagOnly.statusCode());
-
-            HttpResponse<String> emptyQuery = sendGet(runtime.port(), "/strategies?");
-            assertEquals(STATUS_BAD_REQUEST, emptyQuery.statusCode());
+            HttpResponse<String> flagOnly = sendGet(runtime.port(), "/strategies?debug", token);
+            assertEquals(STATUS_ACCEPTED, flagOnly.statusCode());
         }
+    }
+
+    private static String signupToken(ApplicationComposition composition) {
+        return composition
+                .identityHttp()
+                .signup(new SignupHttpRequest(EMAIL, PASSWORD, DISPLAY_NAME))
+                .accessToken();
+    }
+
+    private static String ownerId(ApplicationComposition composition, String token) {
+        return composition
+                .getCurrentUser()
+                .execute(new AccessTokenQuery(token))
+                .id()
+                .value();
     }
 
     private static HttpServerRuntime start(ApplicationComposition composition) {
@@ -114,17 +122,43 @@ class StrategyReadsHttpE2ETest {
                                         ApplicationRoutes.createDefaultRoutes(composition))));
     }
 
-    private static HttpResponse<String> post(int port, String path, String body) throws Exception {
+    private static HttpResponse<String> post(int port, String path, String body, String token)
+            throws Exception {
         HttpRequest request =
                 HttpRequest.newBuilder(URI.create("http://localhost:" + port + path))
                         .header("Content-Type", JSON_TYPE)
+                        .header(AUTHORIZATION, BEARER_PREFIX + token)
                         .POST(HttpRequest.BodyPublishers.ofString(body))
                         .build();
         return HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
     }
 
-    private static HttpResponse<String> get(int port, String path, Map<String, String> query)
+    private static HttpResponse<String> get(
+            int port, String path, Map<String, String> query, String token) throws Exception {
+        return sendGetUri(uri(port, path, query), token);
+    }
+
+    private static HttpResponse<String> getWithoutAuth(
+            int port, String path, Map<String, String> query) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(uri(port, path, query))).GET().build();
+        return HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+    }
+
+    private static HttpResponse<String> sendGet(int port, String pathAndQuery, String token)
             throws Exception {
+        return sendGetUri("http://localhost:" + port + pathAndQuery, token);
+    }
+
+    private static HttpResponse<String> sendGetUri(String uri, String token) throws Exception {
+        HttpRequest request =
+                HttpRequest.newBuilder(URI.create(uri))
+                        .header(AUTHORIZATION, BEARER_PREFIX + token)
+                        .GET()
+                        .build();
+        return HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+    }
+
+    private static String uri(int port, String path, Map<String, String> query) {
         StringBuilder uri = new StringBuilder("http://localhost:" + port + path);
         if (!query.isEmpty()) {
             uri.append(QUERY_START);
@@ -139,22 +173,6 @@ class StrategyReadsHttpE2ETest {
                 uri.append(URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8));
             }
         }
-        return sendGetUri(uri.toString());
-    }
-
-    private static HttpResponse<String> sendGet(int port, String pathAndQuery) throws Exception {
-        return sendGetUri("http://localhost:" + port + pathAndQuery);
-    }
-
-    private static HttpResponse<String> sendGetUri(String uri) throws Exception {
-        HttpRequest request = HttpRequest.newBuilder(URI.create(uri)).GET().build();
-        return HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
-    }
-
-    private static String extractStrategyId(String json) {
-        String marker = "\"strategyId\":\"";
-        int start = json.indexOf(marker) + marker.length();
-        int end = json.indexOf('"', start);
-        return json.substring(start, end);
+        return uri.toString();
     }
 }

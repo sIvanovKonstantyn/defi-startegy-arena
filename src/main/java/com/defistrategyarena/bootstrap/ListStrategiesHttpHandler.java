@@ -1,70 +1,58 @@
 package com.defistrategyarena.bootstrap;
 
+import com.defistrategyarena.shared.events.strategy.ListStrategiesRequested;
 import com.defistrategyarena.shared.http.handlers.BaseHandler;
 import com.defistrategyarena.shared.infra.http.HttpRequest;
-import com.defistrategyarena.strategy.adapter.web.StrategyListHttpResponse;
-import com.defistrategyarena.strategy.adapter.web.StrategyRestAdapter;
 import com.defistrategyarena.strategy.application.ListStrategiesQuery;
-import java.util.List;
 import java.util.Map;
 
-public final class ListStrategiesHttpHandler extends BaseHandler<StrategyListHttpResponse> {
+public final class ListStrategiesHttpHandler extends BaseHandler<AcceptedHttpResponse> {
 
-    private static final String OWNER_ID = "ownerId";
+    private static final int STATUS_ACCEPTED = 202;
+    private static final int STATUS_UNAUTHORIZED = 401;
     private static final String PAGE = "page";
     private static final String SIZE = "size";
     private static final String SORT = "sort";
     private static final String ORDER = "order";
-    private static final String EMPTY = "";
     private static final String INVALID_INTEGER = "invalid integer query parameter";
-    private static final int EMPTY_TOTAL_PAGES = 0;
-    private static final long EMPTY_TOTAL_ELEMENTS = 0L;
 
-    private final StrategyRestAdapter strategyHttp;
+    private final AuthenticatedStrategyPublisher publisher;
 
     public ListStrategiesHttpHandler(ListStrategiesHttpHandlerDeps deps) {
-        this.strategyHttp = deps.strategyHttp();
+        this.publisher = deps.publisher();
     }
 
     @Override
-    protected StrategyListHttpResponse execute(HttpRequest request) {
-        return strategyHttp.list(toQuery(new QueryBag(request.query())));
+    protected AcceptedHttpResponse execute(HttpRequest request) {
+        QueryBag query = new QueryBag(request.query());
+        int page = query.integerOrDefault(new IntParam(PAGE, ListStrategiesQuery.DEFAULT_PAGE));
+        int size = query.integerOrDefault(new IntParam(SIZE, ListStrategiesQuery.DEFAULT_SIZE));
+        String sort = query.textOrDefault(new TextParam(SORT, ListStrategiesQuery.SORT_NAME));
+        String order = query.textOrDefault(new TextParam(ORDER, ListStrategiesQuery.ORDER_ASC));
+        return publisher.publish(
+                new AuthenticatedStrategyPublisher.AuthorizedPublish(
+                        request,
+                        context ->
+                                new ListStrategiesRequested(
+                                        context.correlationId(),
+                                        context.ownerId(),
+                                        page,
+                                        size,
+                                        sort,
+                                        order),
+                        STATUS_ACCEPTED,
+                        STATUS_UNAUTHORIZED));
     }
 
     @Override
-    protected StrategyListHttpResponse badRequestBody() {
-        return new StrategyListHttpResponse(
-                STATUS_BAD_REQUEST,
-                ListStrategiesQuery.DEFAULT_PAGE,
-                ListStrategiesQuery.DEFAULT_SIZE,
-                EMPTY_TOTAL_ELEMENTS,
-                EMPTY_TOTAL_PAGES,
-                ListStrategiesQuery.SORT_NAME,
-                ListStrategiesQuery.ORDER_ASC,
-                List.of());
-    }
-
-    private static ListStrategiesQuery toQuery(QueryBag query) {
-        return new ListStrategiesQuery(
-                query.text(new QueryKey(OWNER_ID)),
-                query.integerOrDefault(new IntParam(PAGE, ListStrategiesQuery.DEFAULT_PAGE)),
-                query.integerOrDefault(new IntParam(SIZE, ListStrategiesQuery.DEFAULT_SIZE)),
-                query.textOrDefault(new TextParam(SORT, ListStrategiesQuery.SORT_NAME)),
-                query.textOrDefault(new TextParam(ORDER, ListStrategiesQuery.ORDER_ASC)));
+    protected AcceptedHttpResponse badRequestBody() {
+        return AcceptedResponses.badRequest();
     }
 
     private record QueryBag(Map<String, String> values) {
-        private String text(QueryKey key) {
-            String value = values.get(key.name());
-            if (value == null) {
-                return EMPTY;
-            }
-            return value;
-        }
-
         private String textOrDefault(TextParam param) {
             String value = values.get(param.key());
-            if (value == null || value.isBlank()) {
+            if (blank(new RawText(value))) {
                 return param.defaultValue();
             }
             return value;
@@ -72,28 +60,30 @@ public final class ListStrategiesHttpHandler extends BaseHandler<StrategyListHtt
 
         private int integerOrDefault(IntParam param) {
             String value = values.get(param.key());
-            if (value == null || value.isBlank()) {
+            if (blank(new RawText(value))) {
                 return param.defaultValue();
             }
-            return parseInteger(new RawInteger(value));
+            return parseInteger(new RawText(value));
         }
 
-        private static int parseInteger(RawInteger raw) {
+        private static boolean blank(RawText text) {
+            return text.value() == null || text.value().isBlank();
+        }
+
+        private static int parseInteger(RawText text) {
             try {
-                return Integer.parseInt(raw.value());
+                return Integer.parseInt(text.value());
             } catch (NumberFormatException exception) {
                 throw new IllegalArgumentException(INVALID_INTEGER, exception);
             }
         }
     }
 
-    private record QueryKey(String name) {}
+    private record RawText(String value) {}
 
     private record TextParam(String key, String defaultValue) {}
 
     private record IntParam(String key, int defaultValue) {}
 
-    private record RawInteger(String value) {}
-
-    public record ListStrategiesHttpHandlerDeps(StrategyRestAdapter strategyHttp) {}
+    public record ListStrategiesHttpHandlerDeps(AuthenticatedStrategyPublisher publisher) {}
 }

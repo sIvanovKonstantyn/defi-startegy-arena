@@ -63,8 +63,7 @@ class StrategyUpdateDeleteE2ETest {
         DeleteStrategy delete = new DeleteStrategy(new DeleteStrategy.DeleteStrategyDeps(strategies));
         http =
                 new StrategyRestAdapter(
-                        new StrategyRestAdapter.StrategyRestAdapterDeps(
-                                create, list, get, update, delete));
+                        new StrategyRestAdapter.StrategyRestAdapterDeps(new com.defistrategyarena.strategy.application.StrategyUseCases(create, list, get, update, delete)));
     }
 
     @Test
@@ -195,8 +194,8 @@ class StrategyUpdateDeleteE2ETest {
     private CreateStrategyHttpResponse createNamed() {
         CreateStrategyHttpResponse response =
                 http.create(
-                        new CreateStrategyHttpRequest(
-                                OWNER, NAME, List.of(priceAboveHold("r1"))));
+                        new StrategyRestAdapter.CreateStrategyHttpInput(
+                                OWNER, new CreateStrategyHttpRequest(NAME, List.of(priceAboveHold("r1")))));
         assertEquals(STATUS_CREATED, response.status());
         return response;
     }

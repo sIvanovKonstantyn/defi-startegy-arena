@@ -3,32 +3,40 @@ package com.defistrategyarena.bootstrap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.defistrategyarena.identity.adapter.web.SignupHttpRequest;
+import com.defistrategyarena.identity.application.AccessTokenQuery;
 import com.defistrategyarena.shared.infra.http.HttpServerConfig;
 import com.defistrategyarena.shared.infra.http.HttpServerRuntime;
 import com.defistrategyarena.shared.infra.http.HttpServerStartData;
 import com.defistrategyarena.shared.infra.http.jetty.JettyHttpServerBootstrap;
 import com.defistrategyarena.shared.infra.persistence.JdbcSettings;
+import com.defistrategyarena.strategy.application.ListStrategiesQuery;
+import com.defistrategyarena.strategy.domain.StrategyId;
 import com.defistrategyarena.strategy.integration.H2PostgresModeSupport;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class StrategyPostgresHttpIT {
 
     private static final int EPHEMERAL_PORT = 0;
-    private static final int STATUS_OK = 200;
-    private static final int STATUS_CREATED = 201;
-    private static final int STATUS_NOT_FOUND = 404;
+    private static final int STATUS_ACCEPTED = 202;
+    private static final int VERSION_TWO = 2;
+    private static final int SINGLE = 1;
+    private static final int EMPTY_STORE = 0;
     private static final String JSON_TYPE = "application/json";
-    private static final String OWNER = "owner-pg-http";
+    private static final String AUTHORIZATION = "Authorization";
+    private static final String BEARER_PREFIX = "Bearer ";
+    private static final String EMAIL = "pg-http@test.co";
+    private static final String PASSWORD = "secret-value";
+    private static final String DISPLAY_NAME = "PgHttp";
     private static final String DB_NAME = "strategy_http_it";
     private static final String CREATE_BODY =
             """
-            {"ownerId":"owner-pg-http","name":"pg-crud","rules":[{"id":"r1","conditionType":"price_above","actionType":"hold","instrument":"ETH-USD","indicator":"","threshold":"3000","allocationPercent":""}]}
+            {"name":"pg-crud","rules":[{"id":"r1","conditionType":"price_above","actionType":"hold","instrument":"ETH-USD","indicator":"","threshold":"3000","allocationPercent":""}]}
             """;
     private static final String UPDATE_BODY =
             """
@@ -62,97 +70,107 @@ class StrategyPostgresHttpIT {
                                                                 new HttpServerConfig(EPHEMERAL_PORT)),
                                                         ApplicationRoutes.createDefaultRoutes(
                                                                 composition))))) {
-            HttpResponse<String> created = post(runtime.port(), "/strategies", CREATE_BODY);
-            assertEquals(STATUS_CREATED, created.statusCode());
-            String strategyId = extractField(created.body(), "strategyId");
+            String token = signupToken(composition);
+            String ownerId = ownerId(composition, token);
 
-            HttpResponse<String> listed =
-                    get(runtime.port(), "/strategies", Map.of("ownerId", OWNER));
-            assertEquals(STATUS_OK, listed.statusCode());
-            assertTrue(listed.body().contains(strategyId));
+            HttpResponse<String> created = post(runtime.port(), "/strategies", CREATE_BODY, token);
+            assertEquals(STATUS_ACCEPTED, created.statusCode());
+            assertTrue(created.body().contains("correlationId"));
+            assertEquals(SINGLE, composition.strategies().size());
+
+            String strategyId =
+                    composition
+                            .strategies()
+                            .listByOwner(
+                                    new ListStrategiesQuery(
+                                            ownerId,
+                                            ListStrategiesQuery.DEFAULT_PAGE,
+                                            SINGLE,
+                                            ListStrategiesQuery.SORT_NAME,
+                                            ListStrategiesQuery.ORDER_ASC))
+                            .items()
+                            .getFirst()
+                            .id()
+                            .value();
+
+            HttpResponse<String> listed = get(runtime.port(), "/strategies", token);
+            assertEquals(STATUS_ACCEPTED, listed.statusCode());
 
             HttpResponse<String> detail =
-                    get(
-                            runtime.port(),
-                            "/strategies/" + strategyId,
-                            Map.of("ownerId", OWNER));
-            assertEquals(STATUS_OK, detail.statusCode());
+                    get(runtime.port(), "/strategies/" + strategyId, token);
+            assertEquals(STATUS_ACCEPTED, detail.statusCode());
 
             HttpResponse<String> updated =
-                    put(
-                            runtime.port(),
-                            "/strategies/" + strategyId,
-                            Map.of("ownerId", OWNER),
-                            UPDATE_BODY);
-            assertEquals(STATUS_OK, updated.statusCode());
-            assertTrue(updated.body().contains("\"versionNumber\":2"));
+                    put(runtime.port(), "/strategies/" + strategyId, UPDATE_BODY, token);
+            assertEquals(STATUS_ACCEPTED, updated.statusCode());
+            assertEquals(
+                    VERSION_TWO,
+                    composition
+                            .strategies()
+                            .get(new StrategyId(strategyId))
+                            .orElseThrow()
+                            .current()
+                            .number());
 
             HttpResponse<String> deleted =
-                    delete(
-                            runtime.port(),
-                            "/strategies/" + strategyId,
-                            Map.of("ownerId", OWNER));
-            assertEquals(STATUS_OK, deleted.statusCode());
-
-            HttpResponse<String> gone =
-                    get(
-                            runtime.port(),
-                            "/strategies/" + strategyId,
-                            Map.of("ownerId", OWNER));
-            assertEquals(STATUS_NOT_FOUND, gone.statusCode());
+                    delete(runtime.port(), "/strategies/" + strategyId, token);
+            assertEquals(STATUS_ACCEPTED, deleted.statusCode());
+            assertEquals(EMPTY_STORE, composition.strategies().size());
         }
     }
 
-    private static HttpResponse<String> post(int port, String path, String body) throws Exception {
+    private static String signupToken(ApplicationComposition composition) {
+        return composition
+                .identityHttp()
+                .signup(new SignupHttpRequest(EMAIL, PASSWORD, DISPLAY_NAME))
+                .accessToken();
+    }
+
+    private static String ownerId(ApplicationComposition composition, String token) {
+        return composition
+                .getCurrentUser()
+                .execute(new AccessTokenQuery(token))
+                .id()
+                .value();
+    }
+
+    private static HttpResponse<String> post(int port, String path, String body, String token)
+            throws Exception {
         HttpRequest request =
                 HttpRequest.newBuilder(URI.create("http://localhost:" + port + path))
                         .header("Content-Type", JSON_TYPE)
+                        .header(AUTHORIZATION, BEARER_PREFIX + token)
                         .POST(HttpRequest.BodyPublishers.ofString(body))
                         .build();
         return HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
     }
 
-    private static HttpResponse<String> put(
-            int port, String path, Map<String, String> query, String body) throws Exception {
+    private static HttpResponse<String> put(int port, String path, String body, String token)
+            throws Exception {
         HttpRequest request =
-                HttpRequest.newBuilder(URI.create(uri(port, path, query)))
+                HttpRequest.newBuilder(URI.create("http://localhost:" + port + path))
                         .header("Content-Type", JSON_TYPE)
+                        .header(AUTHORIZATION, BEARER_PREFIX + token)
                         .PUT(HttpRequest.BodyPublishers.ofString(body))
                         .build();
         return HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
     }
 
-    private static HttpResponse<String> delete(int port, String path, Map<String, String> query)
-            throws Exception {
+    private static HttpResponse<String> delete(int port, String path, String token) throws Exception {
         HttpRequest request =
-                HttpRequest.newBuilder(URI.create(uri(port, path, query))).DELETE().build();
+                HttpRequest.newBuilder(URI.create("http://localhost:" + port + path))
+                        .header(AUTHORIZATION, BEARER_PREFIX + token)
+                        .DELETE()
+                        .build();
         return HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
     }
 
-    private static HttpResponse<String> get(int port, String path, Map<String, String> query)
-            throws Exception {
+    private static HttpResponse<String> get(int port, String path, String token) throws Exception {
         HttpRequest request =
-                HttpRequest.newBuilder(URI.create(uri(port, path, query))).GET().build();
+                HttpRequest.newBuilder(URI.create("http://localhost:" + port + path))
+                        .header(AUTHORIZATION, BEARER_PREFIX + token)
+                        .GET()
+                        .build();
         return HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
-    }
-
-    private static String uri(int port, String path, Map<String, String> query) {
-        StringBuilder builder = new StringBuilder("http://localhost:" + port + path + "?");
-        boolean first = true;
-        for (Map.Entry<String, String> entry : query.entrySet()) {
-            if (!first) {
-                builder.append('&');
-            }
-            first = false;
-            builder.append(entry.getKey()).append('=').append(entry.getValue());
-        }
-        return builder.toString();
-    }
-
-    private static String extractField(String json, String field) {
-        String marker = "\"" + field + "\":\"";
-        int start = json.indexOf(marker) + marker.length();
-        int end = json.indexOf('"', start);
-        return json.substring(start, end);
     }
 }

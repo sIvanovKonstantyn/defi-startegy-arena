@@ -77,19 +77,17 @@ class CreateStrategyE2ETest {
                 new DeleteStrategy(new DeleteStrategy.DeleteStrategyDeps(strategies));
         http =
                 new StrategyRestAdapter(
-                        new StrategyRestAdapter.StrategyRestAdapterDeps(
-                                useCase, listStrategies, getStrategy, updateStrategy, deleteStrategy));
+                        new StrategyRestAdapter.StrategyRestAdapterDeps(new com.defistrategyarena.strategy.application.StrategyUseCases(useCase, listStrategies, getStrategy, updateStrategy, deleteStrategy)));
     }
 
     @Test
     void creates_private_strategy_via_rest_adapter_and_emits_version_published() {
         CreateStrategyHttpRequest request =
                 new CreateStrategyHttpRequest(
-                        OWNER_ID,
                         STRATEGY_NAME,
                         List.of(priceAboveHold(RULE_ID)));
 
-        CreateStrategyHttpResponse response = http.create(request);
+        CreateStrategyHttpResponse response = create(request);
 
         assertEquals(STATUS_CREATED, response.status());
         assertNotEquals(EMPTY_ID, response.strategyId());
@@ -112,9 +110,7 @@ class CreateStrategyE2ETest {
     @Test
     void creates_with_price_under_and_sell() {
         CreateStrategyHttpRequest request =
-                new CreateStrategyHttpRequest(
-                        OWNER_ID,
-                        STRATEGY_NAME,
+                new CreateStrategyHttpRequest(STRATEGY_NAME,
                         List.of(
                                 new CreateStrategyHttpRequest.RuleBody(
                                         RULE_ID,
@@ -125,7 +121,7 @@ class CreateStrategyE2ETest {
                                         THRESHOLD,
                                         ALLOCATION)));
 
-        CreateStrategyHttpResponse response = http.create(request);
+        CreateStrategyHttpResponse response = create(request);
 
         assertEquals(STATUS_CREATED, response.status());
         StrategyDefinition.Rule rule =
@@ -145,9 +141,7 @@ class CreateStrategyE2ETest {
     @Test
     void creates_with_indicator_conditions_hold_and_buy() {
         CreateStrategyHttpRequest request =
-                new CreateStrategyHttpRequest(
-                        OWNER_ID,
-                        STRATEGY_NAME,
+                new CreateStrategyHttpRequest(STRATEGY_NAME,
                         List.of(
                                 new CreateStrategyHttpRequest.RuleBody(
                                         RULE_ID,
@@ -166,7 +160,7 @@ class CreateStrategyE2ETest {
                                         INDICATOR_THRESHOLD,
                                         ALLOCATION)));
 
-        CreateStrategyHttpResponse response = http.create(request);
+        CreateStrategyHttpResponse response = create(request);
 
         assertEquals(STATUS_CREATED, response.status());
         List<StrategyDefinition.Rule> rules =
@@ -186,10 +180,10 @@ class CreateStrategyE2ETest {
     @Test
     void rejects_duplicate_owner_and_name() {
         CreateStrategyHttpRequest request =
-                new CreateStrategyHttpRequest(OWNER_ID, STRATEGY_NAME, List.of());
+                new CreateStrategyHttpRequest(STRATEGY_NAME, List.of());
 
-        CreateStrategyHttpResponse first = http.create(request);
-        CreateStrategyHttpResponse second = http.create(request);
+        CreateStrategyHttpResponse first = create(request);
+        CreateStrategyHttpResponse second = create(request);
 
         assertEquals(STATUS_CREATED, first.status());
         assertTrue(strategies.get(new StrategyId(first.strategyId())).isPresent());
@@ -205,7 +199,9 @@ class CreateStrategyE2ETest {
     @Test
     void rejects_blank_owner() {
         CreateStrategyHttpResponse response =
-                http.create(new CreateStrategyHttpRequest(" ", STRATEGY_NAME, List.of()));
+                http.create(
+                        new StrategyRestAdapter.CreateStrategyHttpInput(
+                                " ", new CreateStrategyHttpRequest(STRATEGY_NAME, List.of())));
 
         assertEquals(STATUS_BAD_REQUEST, response.status());
         assertEquals(EMPTY_STORE, strategies.size());
@@ -215,7 +211,7 @@ class CreateStrategyE2ETest {
     @Test
     void rejects_blank_strategy_name() {
         CreateStrategyHttpResponse response =
-                http.create(new CreateStrategyHttpRequest(OWNER_ID, " ", List.of()));
+                create(new CreateStrategyHttpRequest(" ", List.of()));
 
         assertEquals(STATUS_BAD_REQUEST, response.status());
         assertEquals(EMPTY_STORE, strategies.size());
@@ -225,9 +221,7 @@ class CreateStrategyE2ETest {
     @Test
     void rejects_unknown_condition_type() {
         CreateStrategyHttpRequest request =
-                new CreateStrategyHttpRequest(
-                        OWNER_ID,
-                        STRATEGY_NAME,
+                new CreateStrategyHttpRequest(STRATEGY_NAME,
                         List.of(
                                 new CreateStrategyHttpRequest.RuleBody(
                                         RULE_ID,
@@ -238,7 +232,7 @@ class CreateStrategyE2ETest {
                                         THRESHOLD,
                                         EMPTY)));
 
-        CreateStrategyHttpResponse response = http.create(request);
+        CreateStrategyHttpResponse response = create(request);
 
         assertEquals(STATUS_BAD_REQUEST, response.status());
         assertEquals(EMPTY_STORE, strategies.size());
@@ -248,9 +242,7 @@ class CreateStrategyE2ETest {
     @Test
     void rejects_unknown_action_type() {
         CreateStrategyHttpRequest request =
-                new CreateStrategyHttpRequest(
-                        OWNER_ID,
-                        STRATEGY_NAME,
+                new CreateStrategyHttpRequest(STRATEGY_NAME,
                         List.of(
                                 new CreateStrategyHttpRequest.RuleBody(
                                         RULE_ID,
@@ -261,7 +253,7 @@ class CreateStrategyE2ETest {
                                         THRESHOLD,
                                         EMPTY)));
 
-        CreateStrategyHttpResponse response = http.create(request);
+        CreateStrategyHttpResponse response = create(request);
 
         assertEquals(STATUS_BAD_REQUEST, response.status());
         assertEquals(EMPTY_STORE, strategies.size());
@@ -271,9 +263,7 @@ class CreateStrategyE2ETest {
     @Test
     void rejects_blank_allocation_on_buy() {
         CreateStrategyHttpRequest request =
-                new CreateStrategyHttpRequest(
-                        OWNER_ID,
-                        STRATEGY_NAME,
+                new CreateStrategyHttpRequest(STRATEGY_NAME,
                         List.of(
                                 new CreateStrategyHttpRequest.RuleBody(
                                         RULE_ID,
@@ -284,7 +274,7 @@ class CreateStrategyE2ETest {
                                         THRESHOLD,
                                         EMPTY)));
 
-        CreateStrategyHttpResponse response = http.create(request);
+        CreateStrategyHttpResponse response = create(request);
 
         assertEquals(STATUS_BAD_REQUEST, response.status());
         assertEquals(EMPTY_STORE, strategies.size());
@@ -294,9 +284,7 @@ class CreateStrategyE2ETest {
     @Test
     void rejects_blank_instrument_on_sell() {
         CreateStrategyHttpRequest request =
-                new CreateStrategyHttpRequest(
-                        OWNER_ID,
-                        STRATEGY_NAME,
+                new CreateStrategyHttpRequest(STRATEGY_NAME,
                         List.of(
                                 new CreateStrategyHttpRequest.RuleBody(
                                         RULE_ID,
@@ -307,7 +295,7 @@ class CreateStrategyE2ETest {
                                         THRESHOLD,
                                         ALLOCATION)));
 
-        CreateStrategyHttpResponse response = http.create(request);
+        CreateStrategyHttpResponse response = create(request);
 
         assertEquals(STATUS_BAD_REQUEST, response.status());
         assertEquals(EMPTY_STORE, strategies.size());
@@ -317,9 +305,7 @@ class CreateStrategyE2ETest {
     @Test
     void rejects_null_condition_type_as_unknown() {
         CreateStrategyHttpRequest request =
-                new CreateStrategyHttpRequest(
-                        OWNER_ID,
-                        STRATEGY_NAME,
+                new CreateStrategyHttpRequest(STRATEGY_NAME,
                         List.of(
                                 new CreateStrategyHttpRequest.RuleBody(
                                         RULE_ID,
@@ -330,11 +316,16 @@ class CreateStrategyE2ETest {
                                         THRESHOLD,
                                         EMPTY)));
 
-        CreateStrategyHttpResponse response = http.create(request);
+        CreateStrategyHttpResponse response = create(request);
 
         assertEquals(STATUS_BAD_REQUEST, response.status());
         assertEquals(EMPTY_STORE, strategies.size());
         assertTrue(publishedVersions().isEmpty());
+    }
+
+
+    private CreateStrategyHttpResponse create(CreateStrategyHttpRequest request) {
+        return http.create(new StrategyRestAdapter.CreateStrategyHttpInput(OWNER_ID, request));
     }
 
     private static CreateStrategyHttpRequest.RuleBody priceAboveHold(String ruleId) {

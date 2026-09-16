@@ -4,10 +4,10 @@ import com.defistrategyarena.strategy.adapter.dsl.StrategyDslWireMapper;
 import com.defistrategyarena.strategy.adapter.dsl.StrategyRuleWire;
 import com.defistrategyarena.strategy.domain.StrategyDefinition;
 
-enum CreateStrategyRuleMapper {
+public enum CreateStrategyRuleMapper {
     ;
 
-    static StrategyDefinition.Rule toRule(CreateStrategyHttpRequest.RuleBody body) {
+    public static StrategyDefinition.Rule toRule(CreateStrategyHttpRequest.RuleBody body) {
         return StrategyDslWireMapper.toRule(
                 new StrategyRuleWire(
                         body.id(),

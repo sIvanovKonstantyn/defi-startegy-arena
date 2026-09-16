@@ -298,11 +298,12 @@ com.defistrategyarena
   bootstrap/         # composition-root wiring (routes, future DI)
   shared/
     kernel/
-    messaging/       # DomainEvent, DomainEventPublisher, DomainEventListener
+    messaging/       # DomainEvent, publisher/listener, outbox/inbox ports
     http/handlers/   # BaseHandler for resource HttpHandler implementations
     infra/           # HTTP runtime adapters (Jetty today; Helidon later)
       http/          # HttpServerBootstrap, HttpRouteRegistry, …
       http/jetty/    # Jetty-only code (confined by ArchUnit)
+      messaging/     # Transactional outbox relay + jOOQ/in-memory stores
     events/          # cross-context integration events (add as needed)
 ```
 
@@ -311,6 +312,7 @@ com.defistrategyarena
 Each top-level context package is a **bounded context**. Cross-context communication:
 
 - **Only asynchronous**, via `DomainEventPublisher` / `DomainEventListener` in `shared.messaging`
+- **Transactional outbox / inbox** (Postgres + in-process relay) for durable delivery ([phase-8](./phases/phase-8-strategy-session-async.md))
 - Integration event types live under `shared` (so contexts never import each other)
 - **No compile-time dependency** between `identity` / `strategy` / `marketdata` / `arena` / `leaderboard` (ArchUnit)
 - Intra-context work may still use synchronous hexagonal calls (`application` → `domain` → ports)
@@ -382,6 +384,7 @@ src/test/java/…/<context>/
 5. ~~**Phase 5:** strategy update (new version, name immutable) and delete~~ — done ([phase-5](./phases/phase-5-strategy-update-delete.md), [flow](./flows/strategy-update-delete.md)).
 6. ~~**Phase 6:** Postgres + Flyway + jOOQ persistence + Compose~~ — done ([phase-6](./phases/phase-6-postgres-persistence.md), [flow](./flows/strategy-persistence-postgres.md)).
 7. ~~**Phase 7:** Identity sign-up / sign-in (email/password)~~ — done ([phase-7](./phases/phase-7-identity-auth.md), [flow](./flows/identity-auth.md)).
-8. Define market-data snapshot format and one ingestion adapter.
-9. Implement interpreter MVP and one leaderboard metric.
-10. Add privacy/share and JSON/YAML export before broader protocol actions.
+8. ~~**Phase 8:** Strategy Bearer auth + outbox/inbox async~~ — done ([phase-8](./phases/phase-8-strategy-session-async.md), [flow](./flows/strategy-authenticated-async.md)).
+9. Define market-data snapshot format and one ingestion adapter.
+10. Implement interpreter MVP and one leaderboard metric.
+11. Add privacy/share and JSON/YAML export before broader protocol actions.

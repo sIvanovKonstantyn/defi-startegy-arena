@@ -2,10 +2,10 @@ package com.defistrategyarena.strategy.adapter.dsl;
 
 import com.defistrategyarena.strategy.domain.StrategyDefinition;
 
-enum StrategyRuleWireEncoder {
+public enum StrategyRuleWireEncoder {
     ;
 
-    static StrategyRuleWire encode(StrategyDefinition.Rule rule) {
+    public static StrategyRuleWire encode(StrategyDefinition.Rule rule) {
         ConditionParts condition = conditionParts(rule.when());
         ActionParts action = actionParts(rule.then());
         String instrument =

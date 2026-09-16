@@ -70,8 +70,7 @@ class StrategyReadsE2ETest {
         DeleteStrategy delete = new DeleteStrategy(new DeleteStrategy.DeleteStrategyDeps(strategies));
         http =
                 new StrategyRestAdapter(
-                        new StrategyRestAdapter.StrategyRestAdapterDeps(
-                                create, list, get, update, delete));
+                        new StrategyRestAdapter.StrategyRestAdapterDeps(new com.defistrategyarena.strategy.application.StrategyUseCases(create, list, get, update, delete)));
     }
 
     @Test
@@ -247,46 +246,49 @@ class StrategyReadsE2ETest {
     void gets_detail_for_all_dsl_variants() {
         CreateStrategyHttpResponse under =
                 http.create(
-                        new CreateStrategyHttpRequest(
+                        new StrategyRestAdapter.CreateStrategyHttpInput(
                                 OWNER,
-                                "under",
-                                List.of(
-                                        new CreateStrategyHttpRequest.RuleBody(
-                                                "r1",
-                                                CONDITION_PRICE_UNDER,
-                                                ACTION_SELL,
-                                                INSTRUMENT,
-                                                EMPTY,
-                                                THRESHOLD,
-                                                ALLOCATION))));
+                                new CreateStrategyHttpRequest(
+                                        "under",
+                                        List.of(
+                                                new CreateStrategyHttpRequest.RuleBody(
+                                                        "r1",
+                                                        CONDITION_PRICE_UNDER,
+                                                        ACTION_SELL,
+                                                        INSTRUMENT,
+                                                        EMPTY,
+                                                        THRESHOLD,
+                                                        ALLOCATION)))));
         CreateStrategyHttpResponse below =
                 http.create(
-                        new CreateStrategyHttpRequest(
+                        new StrategyRestAdapter.CreateStrategyHttpInput(
                                 OWNER,
-                                "below",
-                                List.of(
-                                        new CreateStrategyHttpRequest.RuleBody(
-                                                "r1",
-                                                CONDITION_INDICATOR_BELOW,
-                                                ACTION_HOLD,
-                                                EMPTY,
-                                                INDICATOR,
-                                                THRESHOLD,
-                                                EMPTY))));
+                                new CreateStrategyHttpRequest(
+                                        "below",
+                                        List.of(
+                                                new CreateStrategyHttpRequest.RuleBody(
+                                                        "r1",
+                                                        CONDITION_INDICATOR_BELOW,
+                                                        ACTION_HOLD,
+                                                        EMPTY,
+                                                        INDICATOR,
+                                                        THRESHOLD,
+                                                        EMPTY)))));
         CreateStrategyHttpResponse above =
                 http.create(
-                        new CreateStrategyHttpRequest(
+                        new StrategyRestAdapter.CreateStrategyHttpInput(
                                 OWNER,
-                                "above",
-                                List.of(
-                                        new CreateStrategyHttpRequest.RuleBody(
-                                                "r1",
-                                                CONDITION_INDICATOR_ABOVE,
-                                                ACTION_BUY,
-                                                INSTRUMENT,
-                                                INDICATOR,
-                                                THRESHOLD,
-                                                ALLOCATION))));
+                                new CreateStrategyHttpRequest(
+                                        "above",
+                                        List.of(
+                                                new CreateStrategyHttpRequest.RuleBody(
+                                                        "r1",
+                                                        CONDITION_INDICATOR_ABOVE,
+                                                        ACTION_BUY,
+                                                        INSTRUMENT,
+                                                        INDICATOR,
+                                                        THRESHOLD,
+                                                        ALLOCATION)))));
         assertEquals(STATUS_CREATED, under.status());
         assertEquals(STATUS_CREATED, below.status());
         assertEquals(STATUS_CREATED, above.status());
@@ -378,18 +380,19 @@ class StrategyReadsE2ETest {
     private CreateStrategyHttpResponse createNamed(String name) {
         CreateStrategyHttpResponse response =
                 http.create(
-                        new CreateStrategyHttpRequest(
+                        new StrategyRestAdapter.CreateStrategyHttpInput(
                                 OWNER,
-                                name,
-                                List.of(
-                                        new CreateStrategyHttpRequest.RuleBody(
-                                                "r1",
-                                                CONDITION_PRICE_ABOVE,
-                                                ACTION_HOLD,
-                                                INSTRUMENT,
-                                                EMPTY,
-                                                THRESHOLD,
-                                                EMPTY))));
+                                new CreateStrategyHttpRequest(
+                                        name,
+                                        List.of(
+                                                new CreateStrategyHttpRequest.RuleBody(
+                                                        "r1",
+                                                        CONDITION_PRICE_ABOVE,
+                                                        ACTION_HOLD,
+                                                        INSTRUMENT,
+                                                        EMPTY,
+                                                        THRESHOLD,
+                                                        EMPTY)))));
         assertEquals(STATUS_CREATED, response.status());
         return response;
     }
