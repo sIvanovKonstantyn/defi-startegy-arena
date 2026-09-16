@@ -30,10 +30,18 @@
     </Match>
     <Match>
         <Class name="~com\.defistrategyarena\.strategy\.adapter\.persistence\.jooq\..*"/>
-        <Bug pattern="EQ_DOESNT_OVERRIDE_EQUALS,MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR"/>
+        <Bug pattern="EQ_DOESNT_OVERRIDE_EQUALS,MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR,SE_TRANSIENT_FIELD_NOT_RESTORED"/>
     </Match>
     <Match>
         <Class name="~.*\$\w+Deps"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="com.defistrategyarena.shared.infra.http.HttpRequest"/>
+        <Bug pattern="EI_EXPOSE_REP"/>
+    </Match>
+    <Match>
+        <Class name="~com\.defistrategyarena\.identity\.adapter\.crypto\..*\$(SecureRandomSource|HasherConfig|FactoryConfig)"/>
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     </Match>
 </FindBugsFilter>

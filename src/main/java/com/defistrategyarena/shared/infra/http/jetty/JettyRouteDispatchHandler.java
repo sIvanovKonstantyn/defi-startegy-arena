@@ -23,6 +23,7 @@ import org.eclipse.jetty.util.Callback;
 public final class JettyRouteDispatchHandler extends Handler.Abstract {
 
     private static final String CONTENT_TYPE_HEADER = "Content-Type";
+    private static final String AUTHORIZATION_HEADER = "Authorization";
     private static final String NOT_FOUND_BODY = "not found";
     private static final String PLAIN_TEXT = "text/plain";
     private static final String QUERY_PAIR_SEPARATOR = "&";
@@ -62,7 +63,8 @@ public final class JettyRouteDispatchHandler extends Handler.Abstract {
                         path,
                         readBody(request),
                         parseQuery(new RawQuery(request.getHttpURI().getQuery())),
-                        route.pathVariables());
+                        route.pathVariables(),
+                        readHeaders(request));
         HttpHandler handler = route.handler();
         HttpResponse httpResponse = handler.handle(httpRequest);
         writeResponse(
@@ -75,6 +77,14 @@ public final class JettyRouteDispatchHandler extends Handler.Abstract {
         try (InputStream input = Request.asInputStream(request)) {
             return new String(input.readAllBytes(), StandardCharsets.UTF_8);
         }
+    }
+
+    private static Map<String, String> readHeaders(Request request) {
+        String authorization = request.getHeaders().get(AUTHORIZATION_HEADER);
+        if (authorization == null || authorization.isBlank()) {
+            return Map.of();
+        }
+        return Map.of(AUTHORIZATION_HEADER, authorization);
     }
 
     private static Map<String, String> parseQuery(RawQuery rawQuery) {

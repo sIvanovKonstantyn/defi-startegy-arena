@@ -52,6 +52,7 @@ public enum ApplicationRoutes {
                 HttpRouteRegistration.create(
                         new HttpRouteRegistration(
                                 METHOD_DELETE, PATH_STRATEGY_DETAIL, deleteStrategyHandler(composition))));
+        IdentityRoutes.register(new IdentityRoutes.RouteRegistrationTarget(routes, composition));
         return routes;
     }
 

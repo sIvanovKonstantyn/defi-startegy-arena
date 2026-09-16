@@ -253,7 +253,7 @@ Locked defaults:
 | Persistence | **Postgres** + **Flyway** + **jOOQ** behind ports; InMemory kept for context e2e; DB ITs use **H2 `MODE=PostgreSQL`** (no Testcontainers); config via `app.properties` + `DSA_*` env ([phase-6](./phases/phase-6-postgres-persistence.md), [flow](./flows/strategy-persistence-postgres.md)) |
 | Jobs | Behind `JobPort`; technology TBD |
 | Market data store | Behind `MarketDataPort`; technology TBD |
-| Auth | Owned by Identity context; mechanism TBD |
+| Auth | Owned by Identity: email/password (PBKDF2); opaque Bearer sessions ([phase-7](./phases/phase-7-identity-auth.md)) |
 | Observability | TBD with runtime |
 
 React web:
@@ -381,6 +381,7 @@ src/test/java/…/<context>/
 4. ~~**Phase 4:** list/get strategies (paginated)~~ — done ([phase-4](./phases/phase-4-strategy-reads.md), [flow](./flows/strategy-reads.md)).
 5. ~~**Phase 5:** strategy update (new version, name immutable) and delete~~ — done ([phase-5](./phases/phase-5-strategy-update-delete.md), [flow](./flows/strategy-update-delete.md)).
 6. ~~**Phase 6:** Postgres + Flyway + jOOQ persistence + Compose~~ — done ([phase-6](./phases/phase-6-postgres-persistence.md), [flow](./flows/strategy-persistence-postgres.md)).
-7. Define market-data snapshot format and one ingestion adapter.
-8. Implement interpreter MVP and one leaderboard metric.
-9. Add privacy/share and JSON/YAML export before broader protocol actions.
+7. ~~**Phase 7:** Identity sign-up / sign-in (email/password)~~ — done ([phase-7](./phases/phase-7-identity-auth.md), [flow](./flows/identity-auth.md)).
+8. Define market-data snapshot format and one ingestion adapter.
+9. Implement interpreter MVP and one leaderboard metric.
+10. Add privacy/share and JSON/YAML export before broader protocol actions.
