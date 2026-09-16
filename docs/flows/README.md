@@ -12,3 +12,4 @@ Each file should include purpose, actors, a Mermaid sequence, and a text walkthr
 | V1 DSL catalog mapping (phase 3) | [strategy-dsl-catalog.md](./strategy-dsl-catalog.md) |
 | Strategy reads list/get (phase 4) | [strategy-reads.md](./strategy-reads.md) |
 | Strategy update/delete (phase 5) | [strategy-update-delete.md](./strategy-update-delete.md) |
+| Strategy Postgres persistence (phase 6) | [strategy-persistence-postgres.md](./strategy-persistence-postgres.md) |

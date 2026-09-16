@@ -1,6 +1,6 @@
 # DeFi Strategy Arena
 
-Backend: **Gradle / Java 25**, package-based modulith (runtime/framework **TBD**).  
+Backend: **Gradle / Java 25**, package-based modulith with **Jetty 12** HTTP and **Postgres + jOOQ + Flyway** persistence.  
 Architecture: [`docs/system-architecture.md`](docs/system-architecture.md).  
 Quality tooling: [`docs/code-quality-and-architecture.md`](docs/code-quality-and-architecture.md).
 
@@ -8,13 +8,18 @@ Quality tooling: [`docs/code-quality-and-architecture.md`](docs/code-quality-and
 
 - JDK **25** (Gradle toolchain can auto-provision via Foojay)
 - Git
+- **Docker** (optional; for `docker compose up` with real Postgres — qualityCheck ITs use H2 PostgreSQL mode)
 
 ## Commands
 
 ```bash
-./gradlew qualityCheck          # PMD + CPD + SpotBugs + OSV + ArchUnit + JaCoCo
+./gradlew qualityCheck          # PMD + CPD + SpotBugs + OSV + ArchUnit + JaCoCo (H2 PG-mode ITs; no Testcontainers)
 ./gradlew installGitHooks       # pre-commit, commit-msg, pre-push
+docker compose up --build       # app + Postgres (env overrides app.properties)
 ```
+
+Config: [`src/main/resources/app.properties`](src/main/resources/app.properties) defaults; override with `DSA_*` env vars (see [phase-6](docs/phases/phase-6-postgres-persistence.md)).  
+DB ITs: H2 `MODE=PostgreSQL` only — see `.cursor/rules/integration-test-db.mdc`.
 
 Git conventions: [`docs/git-workflow.md`](docs/git-workflow.md) (`review/<feature>`, `CONTEXT | message`, no push to `main` after initial commit).  
 Flow docs: [`docs/flows/`](docs/flows/).
@@ -29,7 +34,7 @@ Flow docs: [`docs/flows/`](docs/flows/).
 | SpotBugs + FindSecBugs | `./gradlew spotbugsMain` |
 | PMD security (`HardCodedCryptoKey`, `InsecureCryptoIv`) | `config/pmd/main-ruleset.xml` |
 | OSV-Scanner (dependency CVEs via CycloneDX SBOM) | `./gradlew dependencyVulnCheck` |
-| JaCoCo 100% (also blocks untested/unused public code) | `build.gradle` (excludes `package-info`) |
+| JaCoCo 100% (also blocks untested/unused public code) | `build.gradle` (excludes `package-info`, generated jOOQ) |
 | Pre-commit | `scripts/git-hooks/pre-commit` |
 | Agent rule | `.cursor/rules/quality-gates.mdc` |
 

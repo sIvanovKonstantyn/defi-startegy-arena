@@ -250,7 +250,7 @@ Locked defaults:
 | Application style | Package-based modulith + hexagonal packages per context |
 | Runtime / DI / HTTP | **Jetty 12** embedded via `shared.infra.http.jetty`; bootstrap selected in `DefiStrategyArenaApplication` (see [http-server-bootstrap flow](./flows/http-server-bootstrap.md)) |
 | API | HTTP routes wired in `bootstrap.ApplicationRoutes`; context `adapter.web` registers handlers (React remains a client only) |
-| Persistence | Behind ports; technology TBD |
+| Persistence | **Postgres** + **Flyway** + **jOOQ** behind ports; InMemory kept for context e2e; DB ITs use **H2 `MODE=PostgreSQL`** (no Testcontainers); config via `app.properties` + `DSA_*` env ([phase-6](./phases/phase-6-postgres-persistence.md), [flow](./flows/strategy-persistence-postgres.md)) |
 | Jobs | Behind `JobPort`; technology TBD |
 | Market data store | Behind `MarketDataPort`; technology TBD |
 | Auth | Owned by Identity context; mechanism TBD |
@@ -380,6 +380,7 @@ src/test/java/…/<context>/
 3. ~~**Phase 3:** V1 DSL condition/action catalog~~ — done ([phase-3](./phases/phase-3-dsl-catalog.md), [flow](./flows/strategy-dsl-catalog.md)).
 4. ~~**Phase 4:** list/get strategies (paginated)~~ — done ([phase-4](./phases/phase-4-strategy-reads.md), [flow](./flows/strategy-reads.md)).
 5. ~~**Phase 5:** strategy update (new version, name immutable) and delete~~ — done ([phase-5](./phases/phase-5-strategy-update-delete.md), [flow](./flows/strategy-update-delete.md)).
-6. Define market-data snapshot format and one ingestion adapter.
-7. Implement interpreter MVP and one leaderboard metric.
-8. Add privacy/share and JSON/YAML export before broader protocol actions.
+6. ~~**Phase 6:** Postgres + Flyway + jOOQ persistence + Compose~~ — done ([phase-6](./phases/phase-6-postgres-persistence.md), [flow](./flows/strategy-persistence-postgres.md)).
+7. Define market-data snapshot format and one ingestion adapter.
+8. Implement interpreter MVP and one leaderboard metric.
+9. Add privacy/share and JSON/YAML export before broader protocol actions.

@@ -9,3 +9,4 @@ Ordered implementation slices. Each phase starts with **approved context e2e sce
 | 3 — V1 DSL catalog | [phase-3-dsl-catalog.md](./phase-3-dsl-catalog.md) | Implemented |
 | 4 — List and get strategies | [phase-4-strategy-reads.md](./phase-4-strategy-reads.md) | Implemented |
 | 5 — Update and delete strategy | [phase-5-strategy-update-delete.md](./phase-5-strategy-update-delete.md) | Implemented |
+| 6 — Postgres + jOOQ + Flyway | [phase-6-postgres-persistence.md](./phase-6-postgres-persistence.md) | Implemented |

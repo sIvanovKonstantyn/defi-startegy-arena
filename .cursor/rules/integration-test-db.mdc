@@ -1,0 +1,19 @@
+---
+description: Prefer H2 PostgreSQL-mode for DB integration tests; never add Testcontainers
+alwaysApply: true
+---
+
+# Integration test databases (mandatory)
+
+## Prefer H2 in PostgreSQL mode
+
+Database integration / repository ITs use **H2 with `MODE=PostgreSQL`** (see `H2PostgresModeSupport`), not a containerized database.
+
+- Fast, hermetic, no Docker daemon required for `./gradlew qualityCheck`
+- Keep production runtime on real **Postgres** (Compose / `jdbc.driver=org.postgresql.Driver`)
+
+## Do not use Testcontainers
+
+- **Do not** add Testcontainers (or similar container-based test DB runners) for this project’s automated tests.
+- **Do not** reintroduce Testcontainers “because Rancher/Docker works locally” — CI and agent sandboxes vary; H2 PG-mode is the standard.
+- Runtime verification of app + Postgres remains **`docker compose`**, separate from unit/IT quality gates.

@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: dsa
+      POSTGRES_USER: dsa
+      POSTGRES_PASSWORD: dsa
+    command:
+      - postgres
+      - -c
+      - max_connections=50
+      - -c
+      - shared_buffers=128MB
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dsa -d dsa"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    mem_limit: 512m
+    cpus: 1.0
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DSA_PERSISTENCE_MODE: postgres
+      DSA_HTTP_PORT: "8080"
+      DSA_JDBC_DRIVER: org.postgresql.Driver
+      DSA_JDBC_URL: jdbc:postgresql://db:5432/dsa
+      DSA_JDBC_USER: dsa
+      DSA_JDBC_PASSWORD: dsa
+      DSA_HIKARI_MAXIMUM_POOL_SIZE: "5"
+      DSA_HIKARI_MINIMUM_IDLE: "1"
+      DSA_HIKARI_CONNECTION_TIMEOUT_MS: "5000"
+      DSA_HIKARI_IDLE_TIMEOUT_MS: "600000"
+      DSA_HIKARI_MAX_LIFETIME_MS: "1800000"
+      DSA_HIKARI_POOL_NAME: dsa-strategy
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx256m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+ExitOnOutOfMemoryError"
+    ports:
+      - "8080:8080"
+    mem_limit: 512m
+    cpus: 1.0

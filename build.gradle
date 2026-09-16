@@ -1,10 +1,12 @@
 plugins {
     id 'java'
+    id 'application'
     id 'jacoco'
     id 'pmd'
     id 'de.aaschmid.cpd' version '3.5'
     id 'com.github.spotbugs' version '6.5.11'
     id 'org.cyclonedx.bom' version '2.3.1'
+    id 'nu.studer.jooq' version '10.1.1'
 }
 
 group = 'com.defistrategyarena'
@@ -14,6 +16,10 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
     }
+}
+
+application {
+    mainClass = 'com.defistrategyarena.DefiStrategyArenaApplication'
 }
 
 repositories {
@@ -26,15 +32,26 @@ ext {
     set('mockitoVersion', '5.17.0')
     set('spotbugsToolVersion', '4.10.3')
     set('findsecbugsVersion', '1.14.0')
-    set('jettyVersion', '12.0.16')
+    set('jettyVersion', '12.0.38')
     set('jspecifyVersion', '1.0.0')
-    set('jacksonVersion', '2.18.3')
+    set('jacksonVersion', '2.18.10')
+    set('jooqVersion', '3.19.22')
+    set('hikariVersion', '6.2.1')
+    set('flywayVersion', '11.3.4')
+    set('postgresVersion', '42.7.13')
 }
 
 dependencies {
     implementation "org.eclipse.jetty:jetty-server:${jettyVersion}"
     implementation "org.jspecify:jspecify:${jspecifyVersion}"
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    implementation "org.jooq:jooq:${jooqVersion}"
+    implementation "com.zaxxer:HikariCP:${hikariVersion}"
+    implementation "org.flywaydb:flyway-core:${flywayVersion}"
+    implementation "org.flywaydb:flyway-database-postgresql:${flywayVersion}"
+    implementation "org.postgresql:postgresql:${postgresVersion}"
+
+    jooqGenerator "org.jooq:jooq-meta-extensions:${jooqVersion}"
 
     spotbugsPlugins "com.h3xstream.findsecbugs:findsecbugs-plugin:${findsecbugsVersion}"
 
@@ -42,16 +59,70 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation "org.mockito:mockito-junit-jupiter:${mockitoVersion}"
     testImplementation "com.tngtech.archunit:archunit-junit5:${archunitVersion}"
+    testImplementation "com.h2database:h2:2.3.232"
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 configurations.configureEach {
     exclude group: 'org.projectlombok', module: 'lombok'
+    resolutionStrategy {
+        force 'org.apache.commons:commons-compress:1.27.1'
+        force 'org.apache.commons:commons-lang3:3.18.0'
+    }
+}
+
+jooq {
+    version = jooqVersion
+    edition = nu.studer.gradle.jooq.JooqEdition.OSS
+    configurations {
+        main {
+            generateSchemaSourceOnCompilation = true
+            generationTool {
+                logging = org.jooq.meta.jaxb.Logging.WARN
+                generator {
+                    name = 'org.jooq.codegen.DefaultGenerator'
+                    database {
+                        name = 'org.jooq.meta.extensions.ddl.DDLDatabase'
+                        includes = '.*'
+                        excludes = ''
+                        inputSchema = 'PUBLIC'
+                        properties {
+                            property {
+                                key = 'scripts'
+                                value = 'src/main/resources/db/migration/*.sql'
+                            }
+                            property {
+                                key = 'sort'
+                                value = 'flyway'
+                            }
+                            property {
+                                key = 'defaultNameCase'
+                                value = 'lower'
+                            }
+                        }
+                    }
+                    target {
+                        packageName = 'com.defistrategyarena.strategy.adapter.persistence.jooq'
+                        directory = 'build/generated-src/jooq/main'
+                    }
+                }
+            }
+        }
+    }
+}
+
+tasks.named('generateJooq').configure {
+    inputs.files(fileTree('src/main/resources/db/migration'))
+            .withPropertyName('migrations')
+            .withPathSensitivity(PathSensitivity.RELATIVE)
+    allInputsDeclared = true
 }
 
 def jacocoExcludes = [
         '**/DefiStrategyArenaApplication.class',
+        '**/DefiStrategyArenaApplication$*.class',
         '**/package-info.class',
+        '**/strategy/adapter/persistence/jooq/**',
 ]
 
 tasks.named('test') {
@@ -117,6 +188,7 @@ pmd {
 
 tasks.named('pmdMain', Pmd) {
     ruleSetFiles = files('config/pmd/main-ruleset.xml')
+    exclude '**/strategy/adapter/persistence/jooq/**'
 }
 
 tasks.named('pmdTest', Pmd) {

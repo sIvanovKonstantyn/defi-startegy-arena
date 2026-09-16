@@ -35,6 +35,7 @@ This runs **PMD** (main + test, including unused-code and security rules), **CPD
 - **No magic numbers** anywhere in executable production code (including `0` / `1` / `-1`) — use named constants.
 - **HTTP runtime in `shared.infra`** — Jetty/Helidon (or similar) only under `shared.infra..`; bounded-context hexagonal layers must not depend on `shared.infra`; `HttpServerBootstrap` implementations live in `shared.infra`; composition root (`DefiStrategyArenaApplication`, `bootstrap`) selects a bootstrap impl, never Jetty/Helidon APIs directly.
 - **Nullness (JSpecify)** — every production package is `@NullMarked`; public method/constructor parameters and return types must not be `@Nullable`; do not `return null` (PMD `NoReturnNull`) — use `Optional` for absence.
+- **DB integration tests** — use **H2 `MODE=PostgreSQL`**; **never** add Testcontainers (see `integration-test-db.mdc`).
 
 ## Coverage
 

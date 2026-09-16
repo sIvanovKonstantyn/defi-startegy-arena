@@ -179,6 +179,7 @@ Build integration (**Gradle**, Java 25):
 - `./gradlew check` runs unit tests **including ArchUnit**, context **e2e** tests, **PMD** (main + test rulesets), and **JaCoCo** coverage verification
 - PMD / JaCoCo violations fail the build (`ignoreFailures = false` / minimum coverage gates)
 - Do **not** run `main-ruleset.xml` unchanged on tests — use `test-ruleset.xml` instead
+- **DB integration tests:** use **H2 in PostgreSQL mode** (`MODE=PostgreSQL`). **Do not** add Testcontainers (see `.cursor/rules/integration-test-db.mdc`). Runtime Postgres is exercised via Docker Compose.
 
 ---
 
