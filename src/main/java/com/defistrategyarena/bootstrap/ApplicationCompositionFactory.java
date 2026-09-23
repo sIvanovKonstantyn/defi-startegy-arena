@@ -4,6 +4,8 @@ import com.defistrategyarena.identity.adapter.crypto.Pbkdf2PasswordHasher;
 import com.defistrategyarena.identity.adapter.crypto.SecureSessionTokenFactory;
 import com.defistrategyarena.identity.adapter.persistence.InMemorySessionRepository;
 import com.defistrategyarena.identity.adapter.persistence.InMemoryUserRepository;
+import com.defistrategyarena.identity.adapter.persistence.JooqSessionRepository;
+import com.defistrategyarena.identity.adapter.persistence.JooqUserRepository;
 import com.defistrategyarena.identity.adapter.web.IdentityRestAdapter;
 import com.defistrategyarena.identity.application.GetCurrentUser;
 import com.defistrategyarena.identity.application.LoginWithPassword;
@@ -22,6 +24,7 @@ import com.defistrategyarena.shared.infra.messaging.JooqTransactionRunner;
 import com.defistrategyarena.shared.infra.persistence.FlywayMigrator;
 import com.defistrategyarena.shared.infra.persistence.HikariDataSourceFactory;
 import com.defistrategyarena.shared.infra.persistence.JooqDslContextFactory;
+import com.defistrategyarena.shared.infra.http.WebSocketBinding;
 import com.defistrategyarena.shared.messaging.DomainEventCodec;
 import com.defistrategyarena.shared.messaging.DomainEventListenerRegistry;
 import com.defistrategyarena.shared.messaging.DomainEventPublisher;
@@ -33,6 +36,8 @@ import com.defistrategyarena.shared.messaging.OutboxRelay;
 import com.defistrategyarena.shared.messaging.OutboxStore;
 import com.defistrategyarena.shared.messaging.TransactionRunner;
 import com.defistrategyarena.shared.messaging.TransactionalOutboxPublisher;
+import com.defistrategyarena.integration.InMemoryUserSessionHub;
+import com.defistrategyarena.integration.StrategyResponseDeliveryListeners;
 import com.defistrategyarena.strategy.adapter.messaging.StrategyRequestListeners;
 import com.defistrategyarena.strategy.adapter.persistence.InMemoryStrategyRepository;
 import com.defistrategyarena.strategy.adapter.persistence.JooqStrategyRepository;
@@ -63,7 +68,7 @@ enum ApplicationCompositionFactory {
         return wire(
                 new CompositionSeed(
                         new InMemoryStrategyRepository(),
-                        identitySeed(new IdentitySeedConfig(config.authSessionTtlSeconds())),
+                        identitySeed(new IdentitySeedConfig(config.authSessionTtlSeconds(), Optional.empty())),
                         messaging,
                         Optional.empty()));
     }
@@ -85,7 +90,9 @@ enum ApplicationCompositionFactory {
         return wire(
                 new CompositionSeed(
                         new JooqStrategyRepository(dsl),
-                        identitySeed(new IdentitySeedConfig(config.authSessionTtlSeconds())),
+                        identitySeed(
+                                new IdentitySeedConfig(
+                                        config.authSessionTtlSeconds(), Optional.of(dsl))),
                         messaging,
                         Optional.of(dataSource)));
     }
@@ -112,8 +119,16 @@ enum ApplicationCompositionFactory {
     }
 
     private static IdentitySeed identitySeed(IdentitySeedConfig config) {
-        UserRepository users = new InMemoryUserRepository();
-        SessionRepository sessions = new InMemorySessionRepository();
+        UserRepository users;
+        SessionRepository sessions;
+        if (config.dsl().isPresent()) {
+            DSLContext dsl = config.dsl().orElseThrow();
+            users = new JooqUserRepository(dsl);
+            sessions = new JooqSessionRepository(dsl);
+        } else {
+            users = new InMemoryUserRepository();
+            sessions = new InMemorySessionRepository();
+        }
         PasswordHasher passwordHasher = new Pbkdf2PasswordHasher();
         SessionTokenFactory tokens = new SecureSessionTokenFactory();
         Clock clock = Clock.systemUTC();
@@ -128,6 +143,18 @@ enum ApplicationCompositionFactory {
                                 useCases, seed.messaging().events()))
                 .register(seed.messaging().registry());
         WiredIdentity identity = wireIdentity(seed.identity());
+        InMemoryUserSessionHub sessionHub = new InMemoryUserSessionHub();
+        ObjectMapper objectMapper = new ObjectMapper();
+        new StrategyResponseDeliveryListeners(
+                        new StrategyResponseDeliveryListeners.StrategyResponseDeliveryListenersDeps(
+                                sessionHub, objectMapper))
+                .register(seed.messaging().registry());
+        WebSocketBinding webSocketBinding =
+                new WebSocketBinding(
+                        new GetCurrentUserWebSocketAuth(
+                                new GetCurrentUserWebSocketAuth.GetCurrentUserWebSocketAuthDeps(
+                                        identity.getCurrentUser())),
+                        sessionHub);
         AuthenticatedStrategyPublisher strategyPublisher =
                 new AuthenticatedStrategyPublisher(
                         new AuthenticatedStrategyPublisher.AuthenticatedStrategyPublisherDeps(
@@ -144,6 +171,7 @@ enum ApplicationCompositionFactory {
                         identity.getCurrentUser(),
                         strategyPublisher,
                         seed.messaging().relay(),
+                        webSocketBinding,
                         seed.dataSource()));
     }
 
@@ -211,7 +239,7 @@ enum ApplicationCompositionFactory {
             Clock clock,
             long sessionTtlSeconds) {}
 
-    private record IdentitySeedConfig(long sessionTtlSeconds) {}
+    private record IdentitySeedConfig(long sessionTtlSeconds, Optional<DSLContext> dsl) {}
 
     private record CompositionSeed(
             StrategyRepository strategies,

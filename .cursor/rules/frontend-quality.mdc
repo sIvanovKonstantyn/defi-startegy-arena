@@ -1,0 +1,18 @@
+---
+description: Frontend quality gates for ui/ changes
+alwaysApply: true
+---
+
+# Frontend quality gates
+
+When changing anything under `ui/`:
+
+```bash
+cd ui && npm run qualityCheck
+```
+
+This runs **Biome**, **`tsc`**, **Vitest**, **production build**, **Playwright**, and **`npm audit --audit-level=high`**.
+
+The git **pre-commit** hook runs the same when staged files include `ui/`.
+
+Do **not** weaken rules, skip Playwright, or use `--no-verify`. Prefer hermetic Vitest/Playwright fakes over full Compose for the gate. See `docs/frontend-quality.md`.

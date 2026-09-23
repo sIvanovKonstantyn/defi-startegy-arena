@@ -64,7 +64,8 @@ class OutboxRelayTest {
                         event -> {
                             delivered.incrementAndGet();
                             publisher.publish(
-                                    new CreateStrategyCompleted(event.correlationId(), "strategy-1"));
+                                    new CreateStrategyCompleted(
+                                            event.correlationId(), event.ownerId(), "strategy-1"));
                         }));
         registry.register(
                 new DomainEventListenerRegistry.ListenerRegistration<>(

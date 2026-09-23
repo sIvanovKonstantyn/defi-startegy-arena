@@ -1,12 +1,14 @@
 # DeFi Strategy Arena
 
 Backend: **Gradle / Java 25**, package-based modulith with **Jetty 12** HTTP and **Postgres + jOOQ + Flyway** persistence.  
+UI: **Vite + React** in `ui/`, served via Compose nginx on port **3000**.  
 Architecture: [`docs/system-architecture.md`](docs/system-architecture.md).  
-Quality tooling: [`docs/code-quality-and-architecture.md`](docs/code-quality-and-architecture.md).
+Quality tooling: [`docs/code-quality-and-architecture.md`](docs/code-quality-and-architecture.md), [`docs/frontend-quality.md`](docs/frontend-quality.md).
 
 ## Prerequisites
 
 - JDK **25** (Gradle toolchain can auto-provision via Foojay)
+- Node **22+** (for `ui/` qualityCheck)
 - Git
 - **Docker** (optional; for `docker compose up` with real Postgres — qualityCheck ITs use H2 PostgreSQL mode)
 
@@ -14,8 +16,9 @@ Quality tooling: [`docs/code-quality-and-architecture.md`](docs/code-quality-and
 
 ```bash
 ./gradlew qualityCheck          # PMD + CPD + SpotBugs + OSV + ArchUnit + JaCoCo (H2 PG-mode ITs; no Testcontainers)
+cd ui && npm run qualityCheck   # Biome + tsc + Vitest + Playwright + npm audit
 ./gradlew installGitHooks       # pre-commit, commit-msg, pre-push
-docker compose up --build       # app + Postgres (env overrides app.properties)
+docker compose up --build       # db + app + ui (open http://localhost:3000)
 ./scripts/loadtest/run-capacity.sh  # combined CRUD RPS capacity → docs/load-tests/*.md
 ```
 

@@ -33,3 +33,15 @@ fi
 echo "[pre-commit] Running ./gradlew qualityCheck..."
 ./gradlew qualityCheck --quiet
 echo "[pre-commit] qualityCheck passed."
+
+if git diff --cached --name-only | grep -q '^ui/'; then
+  echo "[pre-commit] Running ui npm qualityCheck..."
+  (
+    cd ui
+    if [[ ! -d node_modules ]]; then
+      npm ci
+    fi
+    npm run qualityCheck
+  )
+  echo "[pre-commit] ui qualityCheck passed."
+fi

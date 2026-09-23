@@ -25,7 +25,7 @@ Cloud identity providers (e.g. Google OAuth) are intentionally out of scope for 
 | Password storage | PBKDF2-HMAC-SHA256 + random salt (JDK); never store plaintext |
 | Session | Opaque token; only SHA-256 hash stored; client sends `Authorization: Bearer …` |
 | Cross-context | Identity does not call strategy; composition root wires routes; no sync context imports |
-| Persistence | Flyway `V2__identity.sql` + in-memory adapters for e2e / `createDefault` |
+| Persistence | Flyway `V2__identity.sql` + jOOQ adapters in postgres mode; in-memory for memory mode / hermetic e2e |
 
 ---
 
@@ -95,4 +95,4 @@ POST /auth/logout
 
 ## Persistence note
 
-Phase 7 ships Flyway `V2__identity.sql` for Postgres schema. Runtime composition uses **in-memory** identity repositories for both `memory` and `postgres` modes until jOOQ identity adapters are added.
+Phase 7 ships Flyway `V2__identity.sql`. **Postgres mode** uses jOOQ adapters (`JooqUserRepository`, `JooqSessionRepository`) for users, password hashes, and sessions. **Memory mode** keeps in-memory repositories for hermetic unit/e2e tests.

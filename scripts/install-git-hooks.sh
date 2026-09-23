@@ -25,6 +25,6 @@ install_hook pre-push
 
 echo
 echo "Hooks:"
-echo "  pre-commit  — branch review/<feature> (+ initial main only) + ./gradlew qualityCheck"
+echo "  pre-commit  — branch review/<feature> (+ initial main only) + ./gradlew qualityCheck (+ ui qualityCheck if ui/ staged)"
 echo "  commit-msg  — CONTEXT | message"
 echo "  pre-push    — block push to main/master after initial commit"

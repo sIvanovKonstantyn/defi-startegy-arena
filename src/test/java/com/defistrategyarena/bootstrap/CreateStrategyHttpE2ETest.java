@@ -98,7 +98,8 @@ class CreateStrategyHttpE2ETest {
                         HttpServerStartData.create(
                                 new HttpServerStartData(
                                         new HttpServerConfig(EPHEMERAL_PORT),
-                                        ApplicationRoutes.createDefaultRoutes(composition))));
+                                        ApplicationRoutes.createDefaultRoutes(composition),
+                                        java.util.Optional.of(composition.webSocketBinding()))));
     }
 
     private static HttpResponse<String> post(int port, String body, String token) throws Exception {

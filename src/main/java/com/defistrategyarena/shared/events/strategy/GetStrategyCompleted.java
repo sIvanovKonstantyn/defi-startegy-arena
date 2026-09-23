@@ -5,6 +5,7 @@ import java.util.List;
 
 public record GetStrategyCompleted(
         String correlationId,
+        String ownerId,
         String strategyId,
         String name,
         String privacy,

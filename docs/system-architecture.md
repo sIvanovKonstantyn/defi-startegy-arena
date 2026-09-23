@@ -258,7 +258,7 @@ Locked defaults:
 
 React web:
 
-- Strategy studio UI (form/visual builder over the DSL)
+- Strategy studio UI (form/visual builder over the DSL) — MVP auth + CRUD via session WebSocket ([phase-9](./phases/phase-9-web-ui-websocket.md))
 - Submission status
 - Leaderboard
 - Share / export actions  
@@ -385,6 +385,7 @@ src/test/java/…/<context>/
 6. ~~**Phase 6:** Postgres + Flyway + jOOQ persistence + Compose~~ — done ([phase-6](./phases/phase-6-postgres-persistence.md), [flow](./flows/strategy-persistence-postgres.md)).
 7. ~~**Phase 7:** Identity sign-up / sign-in (email/password)~~ — done ([phase-7](./phases/phase-7-identity-auth.md), [flow](./flows/identity-auth.md)).
 8. ~~**Phase 8:** Strategy Bearer auth + outbox/inbox async~~ — done ([phase-8](./phases/phase-8-strategy-session-async.md), [flow](./flows/strategy-authenticated-async.md)).
-9. Define market-data snapshot format and one ingestion adapter.
-10. Implement interpreter MVP and one leaderboard metric.
-11. Add privacy/share and JSON/YAML export before broader protocol actions.
+9. ~~**Phase 9:** React UI + session WebSocket delivery~~ — done ([phase-9](./phases/phase-9-web-ui-websocket.md), [flow](./flows/strategy-response-websocket.md), [frontend-quality](./frontend-quality.md)).
+10. Define market-data snapshot format and one ingestion adapter.
+11. Implement interpreter MVP and one leaderboard metric.
+12. Add privacy/share and JSON/YAML export before broader protocol actions.

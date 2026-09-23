@@ -4,7 +4,7 @@ import com.defistrategyarena.shared.messaging.DomainEvent;
 import java.util.List;
 
 public record ListStrategiesCompleted(
-        String correlationId, List<StrategySummaryPayload> items, long total)
+        String correlationId, String ownerId, List<StrategySummaryPayload> items, long total)
         implements DomainEvent {
 
     public ListStrategiesCompleted {

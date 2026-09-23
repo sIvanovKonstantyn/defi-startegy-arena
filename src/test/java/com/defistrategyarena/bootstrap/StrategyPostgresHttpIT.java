@@ -69,7 +69,9 @@ class StrategyPostgresHttpIT {
                                                         HttpServerConfig.create(
                                                                 new HttpServerConfig(EPHEMERAL_PORT)),
                                                         ApplicationRoutes.createDefaultRoutes(
-                                                                composition))))) {
+                                                                composition),
+                                                        java.util.Optional.of(
+                                                                composition.webSocketBinding()))))) {
             String token = signupToken(composition);
             String ownerId = ownerId(composition, token);
 

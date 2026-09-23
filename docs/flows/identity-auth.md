@@ -9,7 +9,7 @@ Register and authenticate users with email/password, and issue opaque Bearer ses
 - `identity.adapter.web` (`IdentityRestAdapter`, HTTP handlers)
 - `identity.application` (signup / login / logout / me)
 - `identity.domain` (User, Session, password hash value types)
-- `identity.adapter.persistence` (in-memory; jOOQ later)
+- `identity.adapter.persistence` (in-memory for memory mode; jOOQ for postgres mode)
 - `identity.adapter.crypto` (PBKDF2 hasher, session token factory)
 - `bootstrap` (routes + composition)
 - `shared.infra.http` (Authorization header on `HttpRequest`)
@@ -49,7 +49,7 @@ sequenceDiagram
 4. `GET /auth/me` returns only the user's `displayName` for the session.
 5. Logout deletes session row.
 
-Identity persistence for this slice is in-memory in composition (Flyway V2 prepares Postgres tables for a later jOOQ adapter).
+Identity persistence: **in-memory** when `DSA_PERSISTENCE_MODE=memory`; **Postgres** (`users`, `user_passwords`, `auth_sessions`) via jOOQ when mode is `postgres`.
 
 ## Errors / edge cases
 
