@@ -45,3 +45,10 @@ services:
       - "8080:8080"
     mem_limit: 2.5g
     cpus: 0.75
+
+  ui:
+    build: ./ui
+    depends_on:
+      - app
+    ports:
+      - "3000:80"

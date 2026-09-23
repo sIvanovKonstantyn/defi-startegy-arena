@@ -26,6 +26,7 @@ class ApplicationCompositionPersistenceTest {
             assertNotNull(composition.getCurrentUser());
             assertNotNull(composition.strategyPublisher());
             assertNotNull(composition.outboxRelay());
+            assertNotNull(composition.webSocketBinding());
         }
     }
 }

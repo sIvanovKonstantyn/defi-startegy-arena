@@ -53,7 +53,8 @@ public final class DefiStrategyArenaApplication {
                 HttpServerStartData.create(
                         new HttpServerStartData(
                                 request.command().config(),
-                                ApplicationRoutes.createDefaultRoutes(request.composition())));
+                                ApplicationRoutes.createDefaultRoutes(request.composition()),
+                                java.util.Optional.of(request.composition().webSocketBinding())));
         return request.command().bootstrap().start(startData);
     }
 

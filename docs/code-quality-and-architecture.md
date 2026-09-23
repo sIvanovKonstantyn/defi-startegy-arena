@@ -15,7 +15,7 @@ Stack overview:
 | Copy-paste duplicates | **PMD CPD** (`cpdCheck`, min 40 tokens) | Fails the build on duplicated blocks in `src/main/java` |
 | Unsafe / security-relevant code | **SpotBugs** + **FindSecBugs**, **PMD security** | Bytecode + source security patterns; fails the build |
 | Vulnerable dependencies | **CycloneDX SBOM** + **OSV-Scanner** (OSV/GHSA) | Fast classpath/SBOM scan via `dependencyVulnCheck`; fails the build |
-| Pre-commit | `./gradlew qualityCheck` via git hook | No commit without green gates |
+| Pre-commit | `./gradlew qualityCheck` (+ `ui` `npm run qualityCheck` when `ui/` staged) via git hook | No commit without green gates |
 | Agent enforcement | `.cursor/rules/quality-gates.mdc` | Agents must read failures and fix until green |
 
 **Lombok is forbidden** (Gradle exclude + ArchUnit + PMD). Prefer **Java records** for immutable data carriers. Do not introduce anemic getter/setter beans; if rare mutable state is required, model behavior explicitly (not Lombok, not bean boilerplate).

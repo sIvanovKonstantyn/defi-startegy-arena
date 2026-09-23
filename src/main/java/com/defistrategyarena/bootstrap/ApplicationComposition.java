@@ -2,6 +2,7 @@ package com.defistrategyarena.bootstrap;
 
 import com.defistrategyarena.identity.adapter.web.IdentityRestAdapter;
 import com.defistrategyarena.identity.application.GetCurrentUser;
+import com.defistrategyarena.shared.infra.http.WebSocketBinding;
 import com.defistrategyarena.shared.messaging.DomainEventPublisher;
 import com.defistrategyarena.shared.messaging.OutboxRelay;
 import com.defistrategyarena.strategy.adapter.web.StrategyRestAdapter;
@@ -14,23 +15,20 @@ public final class ApplicationComposition implements AutoCloseable {
 
     private static final String CONFIG_REQUIRED = "app config must not be null";
 
-    private final StrategyRepository strategies;
-    private final DomainEventPublisher events;
-    private final StrategyRestAdapter strategyHttp;
-    private final IdentityRestAdapter identityHttp;
-    private final GetCurrentUser getCurrentUser;
-    private final AuthenticatedStrategyPublisher strategyPublisher;
-    private final OutboxRelay outboxRelay;
+    private final ApplicationServices services;
     private final Optional<HikariDataSource> dataSource;
 
     ApplicationComposition(CompositionParts parts) {
-        this.strategies = parts.strategies();
-        this.events = parts.events();
-        this.strategyHttp = parts.strategyHttp();
-        this.identityHttp = parts.identityHttp();
-        this.getCurrentUser = parts.getCurrentUser();
-        this.strategyPublisher = parts.strategyPublisher();
-        this.outboxRelay = parts.outboxRelay();
+        this.services =
+                new ApplicationServices(
+                        parts.strategies(),
+                        parts.events(),
+                        parts.strategyHttp(),
+                        parts.identityHttp(),
+                        parts.getCurrentUser(),
+                        parts.strategyPublisher(),
+                        parts.outboxRelay(),
+                        parts.webSocketBinding());
         this.dataSource = parts.dataSource();
     }
 
@@ -47,37 +45,51 @@ public final class ApplicationComposition implements AutoCloseable {
     }
 
     public StrategyRepository strategies() {
-        return strategies;
+        return services.strategies();
     }
 
     public DomainEventPublisher events() {
-        return events;
+        return services.events();
     }
 
     public StrategyRestAdapter strategyHttp() {
-        return strategyHttp;
+        return services.strategyHttp();
     }
 
     public IdentityRestAdapter identityHttp() {
-        return identityHttp;
+        return services.identityHttp();
     }
 
     public GetCurrentUser getCurrentUser() {
-        return getCurrentUser;
+        return services.getCurrentUser();
     }
 
     public AuthenticatedStrategyPublisher strategyPublisher() {
-        return strategyPublisher;
+        return services.strategyPublisher();
     }
 
     public OutboxRelay outboxRelay() {
-        return outboxRelay;
+        return services.outboxRelay();
+    }
+
+    public WebSocketBinding webSocketBinding() {
+        return services.webSocketBinding();
     }
 
     @Override
     public void close() {
         dataSource.ifPresent(HikariDataSource::close);
     }
+
+    private record ApplicationServices(
+            StrategyRepository strategies,
+            DomainEventPublisher events,
+            StrategyRestAdapter strategyHttp,
+            IdentityRestAdapter identityHttp,
+            GetCurrentUser getCurrentUser,
+            AuthenticatedStrategyPublisher strategyPublisher,
+            OutboxRelay outboxRelay,
+            WebSocketBinding webSocketBinding) {}
 
     record CompositionParts(
             StrategyRepository strategies,
@@ -87,5 +99,6 @@ public final class ApplicationComposition implements AutoCloseable {
             GetCurrentUser getCurrentUser,
             AuthenticatedStrategyPublisher strategyPublisher,
             OutboxRelay outboxRelay,
+            WebSocketBinding webSocketBinding,
             Optional<HikariDataSource> dataSource) {}
 }

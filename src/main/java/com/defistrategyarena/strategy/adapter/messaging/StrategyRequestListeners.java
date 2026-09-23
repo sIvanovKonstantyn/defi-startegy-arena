@@ -88,11 +88,17 @@ public final class StrategyRequestListeners {
                                                                                 new StrategyEventRuleMapper
                                                                                         .RulePayloadList(
                                                                                         event.rules())))))));
-                events.publish(new CreateStrategyCompleted(event.correlationId(), id.value()));
+                events.publish(
+                        new CreateStrategyCompleted(
+                                event.correlationId(), event.ownerId(), id.value()));
             } catch (DuplicateStrategyException exception) {
-                events.publish(new CreateStrategyFailed(event.correlationId(), REASON_DUPLICATE));
+                events.publish(
+                        new CreateStrategyFailed(
+                                event.correlationId(), event.ownerId(), REASON_DUPLICATE));
             } catch (IllegalArgumentException exception) {
-                events.publish(new CreateStrategyFailed(event.correlationId(), REASON_BAD_REQUEST));
+                events.publish(
+                        new CreateStrategyFailed(
+                                event.correlationId(), event.ownerId(), REASON_BAD_REQUEST));
             }
         };
     }
@@ -115,9 +121,14 @@ public final class StrategyRequestListeners {
                 }
                 events.publish(
                         new ListStrategiesCompleted(
-                                event.correlationId(), List.copyOf(items), page.totalElements()));
+                                event.correlationId(),
+                                event.ownerId(),
+                                List.copyOf(items),
+                                page.totalElements()));
             } catch (IllegalArgumentException exception) {
-                events.publish(new ListStrategiesFailed(event.correlationId(), REASON_BAD_REQUEST));
+                events.publish(
+                        new ListStrategiesFailed(
+                                event.correlationId(), event.ownerId(), REASON_BAD_REQUEST));
             }
         };
     }
@@ -131,7 +142,9 @@ public final class StrategyRequestListeners {
                                         new GetStrategyQuery(
                                                 event.ownerId(), new StrategyId(event.strategyId())));
                 if (found.isEmpty()) {
-                    events.publish(new GetStrategyFailed(event.correlationId(), REASON_NOT_FOUND));
+                    events.publish(
+                            new GetStrategyFailed(
+                                    event.correlationId(), event.ownerId(), REASON_NOT_FOUND));
                     return;
                 }
                 Strategy strategy = found.get();
@@ -140,6 +153,7 @@ public final class StrategyRequestListeners {
                 events.publish(
                         new GetStrategyCompleted(
                                 event.correlationId(),
+                                event.ownerId(),
                                 projection.strategyId(),
                                 projection.name(),
                                 projection.privacy(),
@@ -148,7 +162,9 @@ public final class StrategyRequestListeners {
                                         new StrategyEventRuleMapper.RuleDomainList(
                                                 strategy.current().definition().rules()))));
             } catch (IllegalArgumentException exception) {
-                events.publish(new GetStrategyFailed(event.correlationId(), REASON_BAD_REQUEST));
+                events.publish(
+                        new GetStrategyFailed(
+                                event.correlationId(), event.ownerId(), REASON_BAD_REQUEST));
             }
         };
     }
@@ -166,17 +182,22 @@ public final class StrategyRequestListeners {
                                                         new StrategyEventRuleMapper.RulePayloadList(
                                                                 event.rules()))));
                 if (result.isEmpty()) {
-                    events.publish(new UpdateStrategyFailed(event.correlationId(), REASON_NOT_FOUND));
+                    events.publish(
+                            new UpdateStrategyFailed(
+                                    event.correlationId(), event.ownerId(), REASON_NOT_FOUND));
                     return;
                 }
                 UpdateStrategyResult updated = result.get();
                 events.publish(
                         new UpdateStrategyCompleted(
                                 event.correlationId(),
+                                event.ownerId(),
                                 updated.strategyId().value(),
                                 updated.versionNumber()));
             } catch (IllegalArgumentException exception) {
-                events.publish(new UpdateStrategyFailed(event.correlationId(), REASON_BAD_REQUEST));
+                events.publish(
+                        new UpdateStrategyFailed(
+                                event.correlationId(), event.ownerId(), REASON_BAD_REQUEST));
             }
         };
     }
@@ -190,13 +211,18 @@ public final class StrategyRequestListeners {
                                         new DeleteStrategyCommand(
                                                 event.ownerId(), new StrategyId(event.strategyId())));
                 if (deleted.isEmpty()) {
-                    events.publish(new DeleteStrategyFailed(event.correlationId(), REASON_NOT_FOUND));
+                    events.publish(
+                            new DeleteStrategyFailed(
+                                    event.correlationId(), event.ownerId(), REASON_NOT_FOUND));
                     return;
                 }
                 events.publish(
-                        new DeleteStrategyCompleted(event.correlationId(), deleted.get().value()));
+                        new DeleteStrategyCompleted(
+                                event.correlationId(), event.ownerId(), deleted.get().value()));
             } catch (IllegalArgumentException exception) {
-                events.publish(new DeleteStrategyFailed(event.correlationId(), REASON_BAD_REQUEST));
+                events.publish(
+                        new DeleteStrategyFailed(
+                                event.correlationId(), event.ownerId(), REASON_BAD_REQUEST));
             }
         };
     }

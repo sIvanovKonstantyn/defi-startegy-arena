@@ -16,3 +16,4 @@ Each file should include purpose, actors, a Mermaid sequence, and a text walkthr
 | Strategy CRUD load-test capacity | [strategy-crud-load-test.md](./strategy-crud-load-test.md) |
 | Identity auth (sign-up / sign-in) | [identity-auth.md](./identity-auth.md) |
 | Strategy authenticated async (outbox) | [strategy-authenticated-async.md](./strategy-authenticated-async.md) |
+| Strategy response WebSocket delivery | [strategy-response-websocket.md](./strategy-response-websocket.md) |

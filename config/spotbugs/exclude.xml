@@ -25,11 +25,27 @@
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2,THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
     </Match>
     <Match>
+        <Class name="com.defistrategyarena.identity.adapter.persistence.JooqUserRepository"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="com.defistrategyarena.identity.adapter.persistence.JooqSessionRepository"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="com.defistrategyarena.identity.adapter.persistence.JooqUserWrites"/>
+        <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
+    </Match>
+    <Match>
         <Class name="com.defistrategyarena.strategy.adapter.persistence.DuplicateKeyMapper"/>
         <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION"/>
     </Match>
     <Match>
         <Class name="~com\.defistrategyarena\.strategy\.adapter\.persistence\.jooq\..*"/>
+        <Bug pattern="EQ_DOESNT_OVERRIDE_EQUALS,MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR,SE_TRANSIENT_FIELD_NOT_RESTORED"/>
+    </Match>
+    <Match>
+        <Class name="~com\.defistrategyarena\.identity\.adapter\.persistence\.jooq\..*"/>
         <Bug pattern="EQ_DOESNT_OVERRIDE_EQUALS,MC_OVERRIDABLE_METHOD_CALL_IN_CONSTRUCTOR,SE_TRANSIENT_FIELD_NOT_RESTORED"/>
     </Match>
     <Match>
@@ -43,5 +59,13 @@
     <Match>
         <Class name="~com\.defistrategyarena\.identity\.adapter\.crypto\..*\$(SecureRandomSource|HasherConfig|FactoryConfig)"/>
         <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="com.defistrategyarena.shared.infra.http.WebSocketBinding"/>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+    <Match>
+        <Class name="com.defistrategyarena.shared.infra.http.jetty.JettyUserSessionWebSocket"/>
+        <Bug pattern="REC_CATCH_EXCEPTION,CT_CONSTRUCTOR_THROW"/>
     </Match>
 </FindBugsFilter>

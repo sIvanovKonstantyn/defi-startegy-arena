@@ -139,6 +139,12 @@
                 <value><![CDATA[
                     //MethodDeclaration
                       [not(@Abstract = true())]
+                      [not(Modifier/Annotation/ClassType[
+                        @SimpleName = 'Override'
+                        or @SimpleName = 'OnWebSocketOpen'
+                        or @SimpleName = 'OnWebSocketMessage'
+                        or @SimpleName = 'OnWebSocketClose'
+                        or @SimpleName = 'OnWebSocketError'])]
                       [FormalParameters[count(FormalParameter) > 1
                         or FormalParameter[PrimitiveType
                           or (ClassType[@SimpleName = 'String'
