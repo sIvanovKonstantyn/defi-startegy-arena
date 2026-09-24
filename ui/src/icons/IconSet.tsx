@@ -1,27 +1,4 @@
-import type { ReactNode, SVGProps } from "react";
-
-type IconButtonProps = {
-  label: string;
-  disabled?: boolean;
-  className?: string;
-  onClick: () => void;
-  children: ReactNode;
-};
-
-export function IconButton(props: IconButtonProps) {
-  return (
-    <button
-      type="button"
-      className={`icon-button ${props.className ?? ""}`.trim()}
-      aria-label={props.label}
-      title={props.label}
-      disabled={props.disabled}
-      onClick={props.onClick}
-    >
-      {props.children}
-    </button>
-  );
-}
+import type { SVGProps } from "react";
 
 type GlyphProps = {
   className?: string;

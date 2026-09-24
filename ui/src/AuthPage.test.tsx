@@ -12,7 +12,7 @@ describe("AuthPage", () => {
     render(<AuthPage onLogin={onLogin} onSignup={onSignup} onError={onError} />);
     await user.type(screen.getByLabelText("Email"), "a@b.com");
     await user.type(screen.getByLabelText("Password"), "secret-value");
-    await user.click(screen.getByRole("button", { name: /^Log in$/ }));
+    await user.click(screen.getByRole("button", { name: /^Sign in$/ }));
     expect(onLogin).toHaveBeenCalledWith("a@b.com", "secret-value");
   });
 });

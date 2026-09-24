@@ -90,10 +90,10 @@ test("login create strategy and receive ws envelope", async ({ page }) => {
   await page.goto("/");
   await page.getByLabel("Email").fill("player@arena.test");
   await page.getByLabel("Password").fill("secret-value");
-  await page.getByRole("button", { name: "Log in", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Add strategy" })).toBeEnabled();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.getByRole("button", { name: "New strategy" })).toBeEnabled();
   await expect(page.getByRole("link", { name: "Home" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Strategies" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Strategies", exact: true })).toBeVisible();
 
   await page.evaluate((correlationId) => {
     (window as unknown as { __dsaEmit: (payload: unknown) => void }).__dsaEmit({
@@ -104,7 +104,7 @@ test("login create strategy and receive ws envelope", async ({ page }) => {
     });
   }, LIST_CORRELATION);
 
-  await page.getByRole("button", { name: "Add strategy" }).click();
+  await page.getByRole("button", { name: "New strategy" }).click();
   await page.getByLabel("New strategy name").fill("ws-alpha");
 
   const createClick = page.getByRole("button", { name: "Save strategy" }).click();
@@ -143,6 +143,6 @@ test("login create strategy and receive ws envelope", async ({ page }) => {
   await createClick;
 
   await expect(page.getByRole("cell", { name: "ws-alpha" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Edit strategy" })).toBeEnabled();
-  await expect(page.getByRole("button", { name: "Remove strategy" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Edit" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Delete" })).toBeEnabled();
 });

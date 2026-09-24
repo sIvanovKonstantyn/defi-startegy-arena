@@ -4,6 +4,7 @@ Backend: **Gradle / Java 25**, package-based modulith with **Jetty 12** HTTP and
 UI: **Vite + React** in `ui/`, served via Compose nginx on port **3000**.  
 Architecture: [`docs/system-architecture.md`](docs/system-architecture.md).  
 Quality tooling: [`docs/code-quality-and-architecture.md`](docs/code-quality-and-architecture.md), [`docs/frontend-quality.md`](docs/frontend-quality.md).
+UI/UX system: [`AGENTS.md`](AGENTS.md), [`docs/design-system.md`](docs/design-system.md).
 
 ## Prerequisites
 
