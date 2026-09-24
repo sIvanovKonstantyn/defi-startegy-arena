@@ -1,5 +1,7 @@
 import { useEffect } from "react";
-import { IconAlertError, IconButton, IconClose } from "../icons/IconSet";
+import { IconAlertError, IconClose } from "../icons/IconSet";
+import { Button } from "../ui/Button";
+import { IconButton } from "../ui/IconButton";
 
 type ErrorModalProps = {
   message: string;
@@ -34,8 +36,10 @@ export function ErrorModal(props: ErrorModalProps) {
       >
         <div className="error-modal-header">
           <IconAlertError className="error-modal-icon" />
-          <h2 id="error-modal-title">Something went wrong</h2>
-          <IconButton label="Close" className="button-secondary" onClick={props.onClose}>
+          <h2 id="error-modal-title" className="text-h3">
+            Something went wrong
+          </h2>
+          <IconButton label="Close" onClick={props.onClose}>
             <IconClose />
           </IconButton>
         </div>
@@ -43,9 +47,9 @@ export function ErrorModal(props: ErrorModalProps) {
           {props.message}
         </p>
         <div className="error-modal-actions">
-          <IconButton label="Dismiss" onClick={props.onClose}>
-            <IconClose />
-          </IconButton>
+          <Button variant="primary" onClick={props.onClose}>
+            Dismiss
+          </Button>
         </div>
       </div>
     </div>

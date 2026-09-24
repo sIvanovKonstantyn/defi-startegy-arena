@@ -1,0 +1,41 @@
+---
+description: DeFi Arena UI/UX design system — tokens, primitives, and screen patterns
+globs: ui/**/*
+alwaysApply: false
+---
+
+# DeFi Arena UI/UX design system
+
+Source of truth: `docs/design-system.md`, `docs/ui-patterns.md`, `docs/information-architecture.md`.
+
+## Role when changing `ui/`
+
+You are implementing product UI for **DeFi Arena** (calm financial infrastructure + competitive simulation — not casino, cyberpunk, or generic admin chrome).
+
+**Design the system first, then apply it.** Do not invent one-off styling per screen.
+
+## Before writing UI code
+
+1. Prefer existing primitives under `ui/src/ui/` and tokens in `ui/src/index.css`.
+2. Ask: does a component already solve this? Reuse it.
+3. Ask: is there a semantic token for this color/spacing/radius? Reuse it.
+4. Ask: will this become a reusable primitive? If yes, add it to `ui/src/ui/` and document it.
+
+## Non-negotiables
+
+- **Tokens only** — no arbitrary colors, spacing, or radii outside the scales in `docs/design-system.md`.
+- **Button hierarchy** — Primary (filled), Secondary (outline), Tertiary (text), Danger (destructive).
+- **No ambiguous icon-only actions** for Save / Edit / Delete / Sign in — use labeled buttons. Icon-only only for close / back / chevrons / overflow, with `aria-label`.
+- **Forms** — visible labels; never placeholder-only.
+- **Destructive** — visually distinct + confirmation when permanent.
+- **Status** — never color alone; include text (e.g. `READY`).
+- **One primary question + one primary action per page.**
+- **Accessibility** — semantic HTML, keyboard, visible focus, contrast.
+- **Preserve behavior** — do not rewrite app logic for visual reasons.
+
+## Workflow for new screens
+
+1. Map the screen to existing patterns in `docs/ui-patterns.md`.
+2. Compose from primitives (`Button`, `Input`, `PageHeader`, `Card`/`panel`, `Table`, `Badge`, `EmptyState`, `Modal`).
+3. Update docs if you introduce a new reusable pattern.
+4. Run `cd ui && npm run qualityCheck`.

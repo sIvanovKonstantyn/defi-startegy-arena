@@ -20,9 +20,10 @@ import type {
 } from "./api/types";
 import { ErrorModal } from "./errors/ErrorModal";
 import { toUserErrorMessage } from "./errors/messages";
-import { BrandMark, IconButton, IconLogout } from "./icons/IconSet";
+import { BrandMark, IconLogout } from "./icons/IconSet";
 import { StrategiesPage } from "./StrategiesPage";
 import { clearAccessToken, readAccessToken, writeAccessToken } from "./session/tokenStore";
+import { Button } from "./ui/Button";
 
 type PendingWaiter = {
   resolve: (envelope: WsEnvelope) => void;
@@ -357,15 +358,13 @@ export function App() {
         }}
       >
         <BrandMark />
+        <span className="brand-home-title">DeFi Arena</span>
       </a>
       {token ? (
-        <IconButton
-          label="Log out"
-          className="button-secondary header-logout"
-          onClick={handleLogout}
-        >
+        <Button variant="secondary" onClick={handleLogout}>
           <IconLogout />
-        </IconButton>
+          Log out
+        </Button>
       ) : null}
     </header>
   );

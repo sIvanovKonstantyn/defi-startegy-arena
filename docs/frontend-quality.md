@@ -25,6 +25,17 @@ npm run qualityCheck
 
 `scripts/git-hooks/pre-commit` runs `./gradlew qualityCheck`, then when staged paths include `ui/`, runs `cd ui && npm run qualityCheck`.
 
+## Design system
+
+UI work under `ui/` must follow:
+
+- [`docs/design-system.md`](design-system.md)
+- [`docs/ui-patterns.md`](ui-patterns.md)
+- [`docs/information-architecture.md`](information-architecture.md)
+- Cursor rule: `.cursor/rules/ui-ux-design-system.mdc`
+
+Compose screens from `ui/src/ui/` primitives and CSS tokens in `ui/src/index.css`. Do not invent one-off visual systems per page.
+
 ## Local vs Compose
 
 - **Dev:** `npm run dev` proxies `/auth`, `/strategies`, `/ws` to `localhost:8080`.

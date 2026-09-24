@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { IconAuthLogin, IconAuthSignup, IconButton, IconSave } from "./icons/IconSet";
+import { Button } from "./ui/Button";
+import { InputField } from "./ui/InputField";
 
 type AuthPageProps = {
   onLogin: (email: string, password: string) => Promise<void>;
@@ -30,58 +31,55 @@ export function AuthPage(props: AuthPageProps) {
   };
 
   return (
-    <section className="panel auth-panel">
-      <div className="mode-toggle">
-        <IconButton
-          label="Switch to log in"
-          className={mode === "login" ? "active" : "button-secondary"}
+    <section className="panel auth-panel" aria-label="Authentication">
+      <div className="mode-toggle" role="tablist" aria-label="Authentication mode">
+        <button
+          type="button"
+          role="tab"
+          className={`btn btn-secondary${mode === "login" ? " active" : ""}`}
+          aria-selected={mode === "login"}
           onClick={() => setMode("login")}
         >
-          <IconAuthLogin />
-        </IconButton>
-        <IconButton
-          label="Switch to sign up"
-          className={mode === "signup" ? "active" : "button-secondary"}
+          Sign in
+        </button>
+        <button
+          type="button"
+          role="tab"
+          className={`btn btn-secondary${mode === "signup" ? " active" : ""}`}
+          aria-selected={mode === "signup"}
           onClick={() => setMode("signup")}
         >
-          <IconAuthSignup />
-        </IconButton>
+          Create account
+        </button>
       </div>
-      <label>
-        Email
-        <input
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          autoComplete="email"
-        />
-      </label>
-      <label>
-        Password
-        <input
-          type="password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          autoComplete={mode === "login" ? "current-password" : "new-password"}
-        />
-      </label>
+      <InputField
+        id="auth-email"
+        label="Email"
+        value={email}
+        onChange={(event) => setEmail(event.target.value)}
+        autoComplete="email"
+      />
+      <InputField
+        id="auth-password"
+        label="Password"
+        type="password"
+        value={password}
+        onChange={(event) => setPassword(event.target.value)}
+        autoComplete={mode === "login" ? "current-password" : "new-password"}
+      />
       {mode === "signup" ? (
-        <label>
-          Display name
-          <input
-            value={displayName}
-            onChange={(event) => setDisplayName(event.target.value)}
-            autoComplete="nickname"
-          />
-        </label>
+        <InputField
+          id="auth-display-name"
+          label="Display name"
+          value={displayName}
+          onChange={(event) => setDisplayName(event.target.value)}
+          autoComplete="nickname"
+        />
       ) : null}
       <div className="row">
-        <IconButton
-          label={mode === "login" ? "Log in" : "Create account"}
-          disabled={busy}
-          onClick={() => void submit()}
-        >
-          <IconSave />
-        </IconButton>
+        <Button variant="primary" disabled={busy} onClick={() => void submit()}>
+          {mode === "login" ? "Sign in" : "Create account"}
+        </Button>
       </div>
     </section>
   );
