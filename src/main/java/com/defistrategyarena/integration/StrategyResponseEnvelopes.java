@@ -36,6 +36,9 @@ final class StrategyResponseEnvelopes {
     private static final String KEY_PRIVACY = "privacy";
     private static final String KEY_VERSION = "versionNumber";
     private static final String KEY_RULES = "rules";
+    private static final String KEY_DESCRIPTION = "description";
+    private static final String KEY_PNL = "pnl";
+    private static final String KEY_DRAWDOWN = "drawdown";
 
     PushEnvelope createCompleted(CreateStrategyCompleted event) {
         return completed(
@@ -67,9 +70,12 @@ final class StrategyResponseEnvelopes {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put(KEY_STRATEGY_ID, event.strategyId());
         payload.put(KEY_NAME, event.name());
+        payload.put(KEY_DESCRIPTION, event.description());
         payload.put(KEY_PRIVACY, event.privacy());
         payload.put(KEY_VERSION, event.versionNumber());
         payload.put(KEY_RULES, event.rules());
+        payload.put(KEY_PNL, event.pnl());
+        payload.put(KEY_DRAWDOWN, event.drawdown());
         return completed(
                 new CompletedParts(event.ownerId(), event.correlationId(), TYPE_GET, Map.copyOf(payload)));
     }

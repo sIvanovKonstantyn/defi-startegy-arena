@@ -28,18 +28,21 @@ public final class JooqStrategyRepository implements StrategyRepository {
     private static final String DSL_REQUIRED = "dsl context must not be null";
 
     private final DSLContext dsl;
+    private final StrategyGraphStore graphStore;
 
     public JooqStrategyRepository(DSLContext dsl) {
         if (dsl == null) {
             throw new IllegalArgumentException(DSL_REQUIRED);
         }
         this.dsl = dsl;
+        this.graphStore = new StrategyGraphStore(dsl);
     }
 
     @Override
     public void save(Strategy strategy) {
         try {
             insertRow(strategy);
+            graphStore.replaceRules(strategy);
         } catch (DataAccessException ex) {
             throw DuplicateKeyMapper.map(ex);
         }
@@ -52,13 +55,14 @@ public final class JooqStrategyRepository implements StrategyRepository {
                 dsl.update(STRATEGIES)
                         .set(STRATEGIES.PRIVACY, patch.privacy())
                         .set(STRATEGIES.VERSION_NUMBER, patch.versionNumber())
-                        .set(STRATEGIES.DEFINITION_JSON, patch.definitionJson())
+                        .set(STRATEGIES.DESCRIPTION, patch.description())
                         .set(STRATEGIES.UPDATED_AT, patch.updatedAt())
                         .where(STRATEGIES.STRATEGY_ID.eq(patch.strategyId()))
                         .execute();
         if (updated == EMPTY_COUNT) {
             throw new IllegalArgumentException(UNKNOWN_STRATEGY);
         }
+        graphStore.replaceRules(strategy);
     }
 
     @Override
@@ -71,7 +75,7 @@ public final class JooqStrategyRepository implements StrategyRepository {
         return dsl.selectFrom(STRATEGIES)
                 .where(STRATEGIES.STRATEGY_ID.eq(uuid(id)))
                 .fetchOptional()
-                .map(JooqStrategyRowMapper::toStrategy);
+                .map(record -> JooqStrategyRowMapper.toStrategy(new JooqStrategyRowMapper.RowInput(record, graphStore)));
     }
 
     @Override
@@ -80,7 +84,7 @@ public final class JooqStrategyRepository implements StrategyRepository {
                 .where(STRATEGIES.OWNER_ID_NORMALIZED.eq(normalize(new NormalizeText(key.ownerId()))))
                 .and(STRATEGIES.NAME_NORMALIZED.eq(normalize(new NormalizeText(key.name()))))
                 .fetchOptional()
-                .map(JooqStrategyRowMapper::toStrategy);
+                .map(record -> JooqStrategyRowMapper.toStrategy(new JooqStrategyRowMapper.RowInput(record, graphStore)));
     }
 
     @Override
@@ -92,7 +96,10 @@ public final class JooqStrategyRepository implements StrategyRepository {
                         .orderBy(sortField(query))
                         .limit(query.size())
                         .offset(query.page() * query.size())
-                        .fetch(JooqStrategyRowMapper::toStrategy);
+                        .fetch(
+                                record ->
+                                        JooqStrategyRowMapper.toStrategy(
+                                                new JooqStrategyRowMapper.RowInput(record, graphStore)));
         return new StrategyPage(List.copyOf(new ArrayList<>(items)), total);
     }
 
@@ -126,9 +133,9 @@ public final class JooqStrategyRepository implements StrategyRepository {
                 .set(STRATEGIES.OWNER_ID_NORMALIZED, normalize(new NormalizeText(strategy.ownerId())))
                 .set(STRATEGIES.NAME, name)
                 .set(STRATEGIES.NAME_NORMALIZED, normalize(new NormalizeText(name)))
+                .set(STRATEGIES.DESCRIPTION, strategy.current().definition().description())
                 .set(STRATEGIES.PRIVACY, strategy.privacy().name())
                 .set(STRATEGIES.VERSION_NUMBER, strategy.current().number())
-                .set(STRATEGIES.DEFINITION_JSON, json(strategy.current().definition()))
                 .set(STRATEGIES.CREATED_AT, now)
                 .set(STRATEGIES.UPDATED_AT, now)
                 .execute();
@@ -145,10 +152,6 @@ public final class JooqStrategyRepository implements StrategyRepository {
         return field.asc();
     }
 
-    private static String json(com.defistrategyarena.strategy.domain.StrategyDefinition definition) {
-        return StrategyDefinitionJsonCodec.encode(definition);
-    }
-
     private static UUID uuid(StrategyId id) {
         return UUID.fromString(id.value());
     }
@@ -163,7 +166,7 @@ public final class JooqStrategyRepository implements StrategyRepository {
             UUID strategyId,
             String privacy,
             int versionNumber,
-            String definitionJson,
+            String description,
             OffsetDateTime updatedAt) {
 
         private static VersionPatch from(Strategy strategy) {
@@ -171,7 +174,7 @@ public final class JooqStrategyRepository implements StrategyRepository {
                     uuid(strategy.id()),
                     strategy.privacy().name(),
                     strategy.current().number(),
-                    json(strategy.current().definition()),
+                    strategy.current().definition().description(),
                     OffsetDateTime.now(ZoneOffset.UTC));
         }
     }

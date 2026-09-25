@@ -39,7 +39,7 @@ class StrategyWebSocketDeliveryIT {
     private static final String AUTHORIZATION = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String CREATE_BODY =
-            "{\"name\":\"ws-alpha\",\"rules\":[{\"id\":\"r1\",\"conditionType\":\"price_above\",\"actionType\":\"hold\",\"instrument\":\"ETH-USD\",\"indicator\":\"\",\"threshold\":\"3000\",\"allocationPercent\":\"\"}]}";
+            "{\"name\":\"ws-alpha\",\"rules\":[{\"id\":\"r1\",\"when\":{\"type\":\"price_compare\",\"instrument\":\"ETH-USD\",\"operator\":\"gt\",\"threshold\":\"3000\"},\"then\":{\"type\":\"hold\"}}]}";
 
     @Test
     void authenticated_websocket_receives_create_completed() throws Exception {

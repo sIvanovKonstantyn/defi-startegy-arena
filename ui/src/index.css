@@ -432,11 +432,117 @@ p {
 }
 
 .strategies-workspace.with-panel {
-  grid-template-columns: minmax(260px, 340px) 1fr;
+  grid-template-columns: minmax(420px, 560px) 1fr;
 }
 
 .side-panel {
   align-self: start;
+}
+
+.field-select,
+.field-textarea {
+  width: 100%;
+}
+
+.field-textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+
+.field-grid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  align-items: start;
+}
+
+.metric-grid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.metric {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+}
+
+.metric-label {
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.metric-note {
+  color: var(--color-text-muted);
+}
+
+.rules-editor {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.rule-card,
+.condition-node,
+.action-node {
+  margin: 0;
+  display: grid;
+  gap: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  min-width: 0;
+}
+
+.condition-node,
+.action-node {
+  background: var(--color-surface-subtle);
+}
+
+.condition-node .condition-node {
+  background: var(--color-surface);
+}
+
+.rule-card-title,
+.condition-node-title {
+  padding: 0 var(--space-2);
+  color: var(--color-text);
+}
+
+.condition-node-title {
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.rule-card-toolbar,
+.condition-node-controls {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.condition-node-controls .field {
+  flex: 1 1 200px;
+}
+
+.condition-children {
+  display: grid;
+  gap: var(--space-3);
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--color-border);
+}
+
+.cell-description {
+  color: var(--color-text-muted);
+  max-width: 32ch;
 }
 
 .dialog-backdrop,

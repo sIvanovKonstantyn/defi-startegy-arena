@@ -8,7 +8,9 @@ class StrategyDslWireNamesTest {
 
     @Test
     void wire_name_constants_are_loaded() {
-        assertTrue(StrategyDslWireNames.CONDITION_PRICE_ABOVE.contains("price"));
+        assertTrue(StrategyDslWireNames.CONDITION_PRICE_COMPARE.contains("price"));
+        assertTrue(StrategyDslWireNames.CONDITION_AND.contains("and"));
+        assertTrue(StrategyDslWireNames.ACTION_OPEN_LP.contains("open"));
         assertTrue(StrategyDslWireNames.ACTION_HOLD.contains("hold"));
     }
 }

@@ -1,15 +1,30 @@
 import { useEffect, useState } from "react";
-import type { StrategyDetail, StrategyRule, StrategySummary } from "./api/types";
+import type {
+  CreateStrategyBody,
+  StrategyDetail,
+  StrategyRule,
+  StrategySummary,
+} from "./api/types";
 import { IconChevronLeft, IconChevronRight, IconClose } from "./icons/IconSet";
+import { RulesEditor } from "./strategy/RulesEditor";
+import { firstRuleProblem, newRule } from "./strategy/ruleModel";
 import { Badge } from "./ui/Badge";
 import { Button } from "./ui/Button";
 import { ConfirmDialog } from "./ui/ConfirmDialog";
 import { EmptyState } from "./ui/EmptyState";
 import { IconButton } from "./ui/IconButton";
 import { InputField } from "./ui/InputField";
+import { Metric } from "./ui/Metric";
 import { PageHeader } from "./ui/PageHeader";
+import { TextAreaField } from "./ui/TextAreaField";
 
 type PanelMode = "closed" | "create" | "edit";
+
+export type SaveStrategyInput = {
+  strategyId: string;
+  description: string;
+  rules: StrategyRule[];
+};
 
 type StrategiesPageProps = {
   strategies: StrategySummary[];
@@ -18,18 +33,27 @@ type StrategiesPageProps = {
   pageSize: number;
   total: number;
   onPageChange: (page: number) => void;
-  onCreate: (name: string) => Promise<void>;
+  onCreate: (body: CreateStrategyBody) => Promise<void>;
   onEdit: (strategyId: string) => Promise<void>;
-  onSave: (strategyId: string, rules: StrategyRule[]) => Promise<void>;
+  onSave: (input: SaveStrategyInput) => Promise<void>;
   onDelete: (strategyId: string) => Promise<void>;
   onCloseEditor: () => void;
   onError: (error: unknown) => void;
 };
 
+const FIRST_RULE_NUMBER = 1;
+const NAME_REQUIRED = "Strategy name is required";
+const RULES_REQUIRED = "Add at least one rule";
+
+function startingRules(rules: StrategyRule[]): StrategyRule[] {
+  return rules.length > 0 ? rules : [newRule(FIRST_RULE_NUMBER)];
+}
+
 export function StrategiesPage(props: StrategiesPageProps) {
   const [panel, setPanel] = useState<PanelMode>("closed");
   const [name, setName] = useState("");
-  const [threshold, setThreshold] = useState("3000");
+  const [description, setDescription] = useState("");
+  const [rules, setRules] = useState<StrategyRule[]>([newRule(FIRST_RULE_NUMBER)]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<StrategySummary | null>(null);
@@ -38,17 +62,22 @@ export function StrategiesPage(props: StrategiesPageProps) {
   const canPrev = props.page > 0;
   const canNext = (props.page + 1) * props.pageSize < props.total;
   const panelOpen = panel !== "closed";
+  const selected = props.selected;
+  const editBusy = selected ? busyId === selected.strategyId : false;
 
   useEffect(() => {
     if (props.selected) {
       setPanel("edit");
-      setThreshold(props.selected.rules[0]?.threshold ?? "3000");
+      setDescription(props.selected.description);
+      setRules(startingRules(props.selected.rules));
     }
   }, [props.selected]);
 
   const closePanel = () => {
     setPanel("closed");
     setName("");
+    setDescription("");
+    setRules([newRule(FIRST_RULE_NUMBER)]);
     props.onCloseEditor();
   };
 
@@ -56,6 +85,8 @@ export function StrategiesPage(props: StrategiesPageProps) {
     props.onCloseEditor();
     setPanel("create");
     setName("");
+    setDescription("");
+    setRules([newRule(FIRST_RULE_NUMBER)]);
   };
 
   const runRow = async (id: string, action: () => Promise<void>) => {
@@ -69,17 +100,28 @@ export function StrategiesPage(props: StrategiesPageProps) {
     }
   };
 
+  const rulesProblem = () => {
+    if (rules.length === 0) {
+      return RULES_REQUIRED;
+    }
+    return firstRuleProblem(rules);
+  };
+
   const submitCreate = async () => {
     const trimmed = name.trim();
     if (!trimmed) {
-      props.onError(new Error("Strategy name is required"));
+      props.onError(new Error(NAME_REQUIRED));
+      return;
+    }
+    const problem = rulesProblem();
+    if (problem) {
+      props.onError(new Error(problem));
       return;
     }
     setCreating(true);
     try {
-      await props.onCreate(trimmed);
-      setName("");
-      setPanel("closed");
+      await props.onCreate({ name: trimmed, description: description.trim(), rules });
+      closePanel();
     } catch (err) {
       props.onError(err);
     } finally {
@@ -88,13 +130,19 @@ export function StrategiesPage(props: StrategiesPageProps) {
   };
 
   const saveSelected = async () => {
-    if (!props.selected) {
+    if (!selected) {
       return;
     }
-    const rules = props.selected.rules.map((rule, index) =>
-      index === 0 ? { ...rule, threshold } : rule,
-    );
-    await props.onSave(props.selected.strategyId, rules);
+    const problem = rulesProblem();
+    if (problem) {
+      props.onError(new Error(problem));
+      return;
+    }
+    await props.onSave({
+      strategyId: selected.strategyId,
+      description: description.trim(),
+      rules,
+    });
     closePanel();
   };
 
@@ -125,9 +173,17 @@ export function StrategiesPage(props: StrategiesPageProps) {
                 label="Name"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                aria-label="New strategy name"
                 disabled={creating}
               />
+              <TextAreaField
+                id="new-strategy-description"
+                label="Description"
+                value={description}
+                hint="What this strategy tries to capture."
+                onChange={(event) => setDescription(event.target.value)}
+                disabled={creating}
+              />
+              <RulesEditor rules={rules} disabled={creating} onChange={setRules} />
               <div className="row">
                 <Button variant="primary" disabled={creating} onClick={() => void submitCreate()}>
                   Save strategy
@@ -136,27 +192,26 @@ export function StrategiesPage(props: StrategiesPageProps) {
             </>
           ) : null}
 
-          {panel === "edit" && props.selected ? (
+          {panel === "edit" && selected ? (
             <>
-              <p className="muted-id">{props.selected.name}</p>
-              <InputField
-                id="strategy-threshold"
-                label="Threshold"
-                value={threshold}
-                onChange={(event) => setThreshold(event.target.value)}
-                disabled={busyId === props.selected.strategyId}
+              <p className="muted-id">{selected.name}</p>
+              <div className="metric-grid">
+                <Metric label="PnL" value={selected.pnl} />
+                <Metric label="Max drawdown" value={selected.drawdown} />
+              </div>
+              <TextAreaField
+                id="strategy-description"
+                label="Description"
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                disabled={editBusy}
               />
+              <RulesEditor rules={rules} disabled={editBusy} onChange={setRules} />
               <div className="row">
                 <Button
                   variant="primary"
-                  disabled={busyId === props.selected.strategyId}
-                  onClick={() => {
-                    const selected = props.selected;
-                    if (!selected) {
-                      return;
-                    }
-                    void runRow(selected.strategyId, saveSelected);
-                  }}
+                  disabled={editBusy}
+                  onClick={() => void runRow(selected.strategyId, saveSelected)}
                 >
                   Save changes
                 </Button>
@@ -188,6 +243,7 @@ export function StrategiesPage(props: StrategiesPageProps) {
               <thead>
                 <tr>
                   <th scope="col">Name</th>
+                  <th scope="col">Description</th>
                   <th scope="col">Privacy</th>
                   <th scope="col">Version</th>
                   <th scope="col">Actions</th>
@@ -199,6 +255,7 @@ export function StrategiesPage(props: StrategiesPageProps) {
                   return (
                     <tr key={strategy.strategyId}>
                       <td>{strategy.name}</td>
+                      <td className="cell-description">{strategy.description}</td>
                       <td>
                         <Badge tone="neutral">{strategy.privacy}</Badge>
                       </td>

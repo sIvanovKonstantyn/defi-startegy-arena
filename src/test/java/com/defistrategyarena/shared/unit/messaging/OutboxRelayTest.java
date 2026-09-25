@@ -34,6 +34,7 @@ class OutboxRelayTest {
     private static final String CORRELATION = "corr-1";
     private static final String OWNER = "owner-1";
     private static final String NAME = "alpha";
+    private static final String DESCRIPTION = "alpha description";
     private static final String EMPTY_TEXT = "";
     private static final String BAD_PAYLOAD = "{";
     private static final String UNKNOWN_TYPE = "unknown.event";
@@ -79,7 +80,7 @@ class OutboxRelayTest {
                                 codec,
                                 registry,
                                 new ImmediateTransactionRunner()));
-        publisher.publish(new CreateStrategyRequested(CORRELATION, OWNER, NAME, List.of()));
+        publisher.publish(new CreateStrategyRequested(CORRELATION, OWNER, NAME, DESCRIPTION, List.of()));
         relay.drain();
         assertEquals(SINGLE, delivered.get());
         assertEquals(List.of(CORRELATION), completed);
@@ -128,7 +129,7 @@ class OutboxRelayTest {
                         new JacksonDomainEventCodec.JacksonDomainEventCodecDeps(
                                 new ObjectMapper(), StrategyEventTypes.catalog()));
         UUID id = UUID.randomUUID();
-        DomainEvent event = new CreateStrategyRequested(CORRELATION, OWNER, NAME, List.of());
+        DomainEvent event = new CreateStrategyRequested(CORRELATION, OWNER, NAME, DESCRIPTION, List.of());
         DomainEventCodec.EncodedEvent encoded = codec.encode(event);
         outbox.append(
                 new OutboxStore.OutboxAppendCommand(
@@ -206,7 +207,7 @@ class OutboxRelayTest {
                                 failingMapper, StrategyEventTypes.catalog()));
         assertThrows(
                 IllegalStateException.class,
-                () -> failingCodec.encode(new CreateStrategyRequested(CORRELATION, OWNER, NAME, List.of())));
+                () -> failingCodec.encode(new CreateStrategyRequested(CORRELATION, OWNER, NAME, DESCRIPTION, List.of())));
 
         JacksonDomainEventCodec codec =
                 new JacksonDomainEventCodec(
@@ -227,7 +228,7 @@ class OutboxRelayTest {
                                         BAD_PAYLOAD,
                                         Optional.empty())));
         DomainEventCodec.EncodedEvent blankCorrelation =
-                codec.encode(new CreateStrategyRequested(EMPTY_TEXT, OWNER, NAME, List.of()));
+                codec.encode(new CreateStrategyRequested(EMPTY_TEXT, OWNER, NAME, DESCRIPTION, List.of()));
         assertTrue(blankCorrelation.correlationId().isEmpty());
         DomainEventCodec.EncodedEvent noAccessor =
                 codec.encode(new StrategyVersionPublished("s1", VERSION, OWNER));

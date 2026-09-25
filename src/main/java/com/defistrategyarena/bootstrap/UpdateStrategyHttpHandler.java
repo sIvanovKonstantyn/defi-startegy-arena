@@ -37,6 +37,7 @@ public final class UpdateStrategyHttpHandler extends BaseHandler<AcceptedHttpRes
                 input.context().correlationId(),
                 input.context().ownerId(),
                 input.strategyId(),
+                input.payload().description(),
                 BootstrapRulePayloads.fromHttp(
                         new BootstrapRulePayloads.RuleBodies(input.payload().rules())));
     }

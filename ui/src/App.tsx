@@ -11,6 +11,11 @@ import {
 } from "./api/http";
 import { SessionSocket } from "./api/sessionSocket";
 import type {
+  ActionType,
+  ActionWire,
+  CompareOperator,
+  ConditionType,
+  ConditionWire,
   CreateStrategyBody,
   StrategyDetail,
   StrategyRule,
@@ -21,7 +26,7 @@ import type {
 import { ErrorModal } from "./errors/ErrorModal";
 import { toUserErrorMessage } from "./errors/messages";
 import { BrandMark, IconLogout } from "./icons/IconSet";
-import { StrategiesPage } from "./StrategiesPage";
+import { type SaveStrategyInput, StrategiesPage } from "./StrategiesPage";
 import { clearAccessToken, readAccessToken, writeAccessToken } from "./session/tokenStore";
 import { Button } from "./ui/Button";
 
@@ -30,15 +35,11 @@ type PendingWaiter = {
   reject: (error: Error) => void;
 };
 
-const DEFAULT_RULE: StrategyRule = {
-  id: "r1",
-  conditionType: "price_above",
-  actionType: "hold",
-  instrument: "ETH-USD",
-  indicator: "",
-  threshold: "3000",
-  allocationPercent: "",
-};
+const CONDITION_TYPES: ConditionType[] = ["and", "or", "price_compare", "indicator_compare"];
+const ACTION_TYPES: ActionType[] = ["hold", "buy", "sell", "open_lp"];
+const OPERATORS: CompareOperator[] = ["lt", "lte", "gt", "gte", "eq"];
+const FALLBACK_CONDITION_TYPE: ConditionType = "price_compare";
+const FALLBACK_ACTION_TYPE: ActionType = "hold";
 
 const PAGE_SIZE = 10;
 const EMPTY_TOTAL = 0;
@@ -47,17 +48,84 @@ const WAIT_TIMEOUT_MS = 15_000;
 const RECONNECT_DELAY_MS = 400;
 const RESULT_TIMEOUT = "Timed out waiting for strategy result";
 
+function asText(value: unknown): string {
+  return value === undefined || value === null ? "" : String(value);
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === "object" ? (value as Record<string, unknown>) : {};
+}
+
+function asParameters(value: unknown): Record<string, string> {
+  const source = asRecord(value);
+  const parameters: Record<string, string> = {};
+  for (const [key, entry] of Object.entries(source)) {
+    parameters[key] = asText(entry);
+  }
+  return parameters;
+}
+
+function asConditionType(value: unknown): ConditionType {
+  const text = asText(value);
+  return CONDITION_TYPES.find((type) => type === text) ?? FALLBACK_CONDITION_TYPE;
+}
+
+function asOperator(value: unknown): CompareOperator | undefined {
+  const text = asText(value);
+  return OPERATORS.find((operator) => operator === text);
+}
+
+function asCondition(value: unknown): ConditionWire {
+  const row = asRecord(value);
+  const childrenRaw = Array.isArray(row.children) ? row.children : [];
+  return {
+    type: asConditionType(row.type),
+    children: childrenRaw.map(asCondition),
+    instrument: asText(row.instrument),
+    indicator: asText(row.indicator),
+    operator: asOperator(row.operator),
+    threshold: asText(row.threshold),
+    parameters: asParameters(row.parameters),
+  };
+}
+
+function asAction(value: unknown): ActionWire {
+  const row = asRecord(value);
+  const text = asText(row.type);
+  return {
+    type: ACTION_TYPES.find((type) => type === text) ?? FALLBACK_ACTION_TYPE,
+    instrument: asText(row.instrument),
+    instrumentPair: asText(row.instrumentPair),
+    allocationPercent: asText(row.allocationPercent),
+    yearlyFeePercent: asText(row.yearlyFeePercent),
+  };
+}
+
+function asRules(value: unknown): StrategyRule[] {
+  const rulesRaw = Array.isArray(value) ? value : [];
+  return rulesRaw.map((rule) => {
+    const row = asRecord(rule);
+    return {
+      id: asText(row.id),
+      when: asCondition(row.when),
+      // biome-ignore lint/suspicious/noThenProperty: `when` / `then` are the wire field names
+      then: asAction(row.then),
+    };
+  });
+}
+
 function asSummaries(payload: Record<string, unknown>): StrategySummary[] {
   const items = payload.items;
   if (!Array.isArray(items)) {
     return [];
   }
   return items.map((item) => {
-    const row = item as Record<string, unknown>;
+    const row = asRecord(item);
     return {
-      strategyId: String(row.strategyId ?? ""),
-      name: String(row.name ?? ""),
-      privacy: String(row.privacy ?? ""),
+      strategyId: asText(row.strategyId),
+      name: asText(row.name),
+      description: asText(row.description),
+      privacy: asText(row.privacy),
       versionNumber: Number(row.versionNumber ?? 0),
     };
   });
@@ -68,25 +136,15 @@ function asTotal(payload: Record<string, unknown>): number {
 }
 
 function asDetail(payload: Record<string, unknown>): StrategyDetail {
-  const rulesRaw = Array.isArray(payload.rules) ? payload.rules : [];
-  const rules = rulesRaw.map((rule) => {
-    const row = rule as Record<string, unknown>;
-    return {
-      id: String(row.id ?? ""),
-      conditionType: String(row.conditionType ?? ""),
-      actionType: String(row.actionType ?? ""),
-      instrument: String(row.instrument ?? ""),
-      indicator: String(row.indicator ?? ""),
-      threshold: String(row.threshold ?? ""),
-      allocationPercent: String(row.allocationPercent ?? ""),
-    };
-  });
   return {
-    strategyId: String(payload.strategyId ?? ""),
-    name: String(payload.name ?? ""),
-    privacy: String(payload.privacy ?? ""),
+    strategyId: asText(payload.strategyId),
+    name: asText(payload.name),
+    description: asText(payload.description),
+    privacy: asText(payload.privacy),
     versionNumber: Number(payload.versionNumber ?? 0),
-    rules,
+    rules: asRules(payload.rules),
+    pnl: asText(payload.pnl),
+    drawdown: asText(payload.drawdown),
   };
 }
 
@@ -281,12 +339,11 @@ export function App() {
     setWsReady(false);
   };
 
-  const handleCreate = async (name: string) => {
+  const handleCreate = async (body: CreateStrategyBody) => {
     if (!token) {
       return;
     }
     setError(null);
-    const body: CreateStrategyBody = { name, rules: [DEFAULT_RULE] };
     const accepted = await createStrategy(token, body);
     await waitFor(accepted.correlationId);
     await refreshList(FIRST_PAGE);
@@ -302,13 +359,13 @@ export function App() {
     setSelected(asDetail(envelope.payload));
   };
 
-  const handleSave = async (strategyId: string, rules: StrategyRule[]) => {
+  const handleSave = async (input: SaveStrategyInput) => {
     if (!token) {
       return;
     }
     setError(null);
-    const body: UpdateStrategyBody = { rules };
-    const accepted = await updateStrategy(token, strategyId, body);
+    const body: UpdateStrategyBody = { description: input.description, rules: input.rules };
+    const accepted = await updateStrategy(token, input.strategyId, body);
     await waitFor(accepted.correlationId);
     setSelected(null);
     await refreshList();

@@ -3,20 +3,22 @@ package com.defistrategyarena.strategy.unit;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.defistrategyarena.strategy.application.DeleteStrategyCommand;
+import com.defistrategyarena.strategy.application.UpdateStrategyCommand;
+import com.defistrategyarena.strategy.application.UpdateStrategyResult;
 import com.defistrategyarena.strategy.domain.Privacy;
 import com.defistrategyarena.strategy.domain.Strategy;
 import com.defistrategyarena.strategy.domain.StrategyDefinition;
 import com.defistrategyarena.strategy.domain.StrategyId;
 import com.defistrategyarena.strategy.domain.StrategyVersion;
-import com.defistrategyarena.strategy.application.DeleteStrategyCommand;
-import com.defistrategyarena.strategy.application.UpdateStrategyCommand;
-import com.defistrategyarena.strategy.application.UpdateStrategyResult;
+import com.defistrategyarena.strategy.testsupport.StrategyTestFixtures;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class StrategyDomainEdgesTest {
 
     private static final int VERSION_TWO = 2;
+    private static final String EMPTY_DESCRIPTION = "";
 
     @Test
     void strategy_id_rejects_blank() {
@@ -30,7 +32,8 @@ class StrategyDomainEdgesTest {
 
     @Test
     void strategy_version_create_copies_draft() {
-        StrategyDefinition definition = new StrategyDefinition("n", List.of());
+        StrategyDefinition definition =
+                StrategyTestFixtures.definition("n", StrategyTestFixtures.priceGtHold("r1"));
         StrategyVersion version =
                 StrategyVersion.create(new StrategyVersion(VERSION_TWO, definition));
         assertEquals(VERSION_TWO, version.number());
@@ -49,19 +52,35 @@ class StrategyDomainEdgesTest {
 
     @Test
     void strategy_definition_rejects_null_rules() {
-        assertThrows(IllegalArgumentException.class, () -> new StrategyDefinition("n", null));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new StrategyDefinition("n", EMPTY_DESCRIPTION, null));
     }
 
     @Test
     void strategy_definition_rejects_null_name() {
-        assertThrows(IllegalArgumentException.class, () -> new StrategyDefinition(null, List.of()));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new StrategyDefinition(null, EMPTY_DESCRIPTION, List.of()));
+    }
+
+    @Test
+    void strategy_definition_rejects_null_description() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new StrategyDefinition("n", null, List.of(StrategyTestFixtures.priceGtHold("r1"))));
     }
 
     @Test
     void strategy_create_rejects_null_owner() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> Strategy.create(new Strategy.CreateStrategyData(null, new StrategyDefinition("n", List.of()))));
+                () ->
+                        Strategy.create(
+                                new Strategy.CreateStrategyData(
+                                        null,
+                                        StrategyTestFixtures.definition(
+                                                "n", StrategyTestFixtures.priceGtHold("r1")))));
     }
 
     @Test
@@ -81,22 +100,31 @@ class StrategyDomainEdgesTest {
     }
 
     @Test
+    void and_rejects_empty_children() {
+        assertThrows(IllegalArgumentException.class, () -> new StrategyDefinition.And(List.of()));
+    }
+
+    @Test
     void strategy_publish_new_version_rejects_empty_rules() {
         Strategy strategy =
                 Strategy.create(
                         new Strategy.CreateStrategyData(
-                                "owner", new StrategyDefinition("n", List.of())));
+                                "owner",
+                                StrategyTestFixtures.definition(
+                                        "n", StrategyTestFixtures.priceGtHold("r1"))));
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new Strategy.PublishNewVersionData(List.of()));
+                () -> new Strategy.PublishNewVersionData(EMPTY_DESCRIPTION, List.of()));
         assertThrows(
-                IllegalArgumentException.class, () -> new Strategy.PublishNewVersionData(null));
+                IllegalArgumentException.class,
+                () -> new Strategy.PublishNewVersionData(EMPTY_DESCRIPTION, null));
         assertThrows(NullPointerException.class, () -> strategy.publishNewVersion(null));
     }
 
     @Test
     void strategy_version_next_increments() {
-        StrategyDefinition definition = new StrategyDefinition("n", List.of());
+        StrategyDefinition definition =
+                StrategyTestFixtures.definition("n", StrategyTestFixtures.priceGtHold("r1"));
         StrategyVersion next = StrategyVersion.initial(definition).next(definition);
         assertEquals(VERSION_TWO, next.number());
     }
@@ -106,23 +134,23 @@ class StrategyDomainEdgesTest {
         StrategyId id = new StrategyId("00000000-0000-0000-0000-000000000001");
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new UpdateStrategyCommand(null, id, List.of()));
+                () -> new UpdateStrategyCommand(null, id, EMPTY_DESCRIPTION, List.of()));
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new UpdateStrategyCommand("o", null, List.of()));
+                () -> new UpdateStrategyCommand("o", null, EMPTY_DESCRIPTION, List.of()));
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new UpdateStrategyCommand("o", id, null));
+                () -> new UpdateStrategyCommand("o", id, null, List.of()));
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new DeleteStrategyCommand(null, id));
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> new DeleteStrategyCommand("o", null));
+                () -> new UpdateStrategyCommand("o", id, EMPTY_DESCRIPTION, null));
+        assertThrows(IllegalArgumentException.class, () -> new DeleteStrategyCommand(null, id));
+        assertThrows(IllegalArgumentException.class, () -> new DeleteStrategyCommand("o", null));
         UpdateStrategyResult result =
                 UpdateStrategyResult.create(new UpdateStrategyResult(id, VERSION_TWO));
         assertEquals(VERSION_TWO, result.versionNumber());
-        DeleteStrategyCommand delete = DeleteStrategyCommand.create(new DeleteStrategyCommand("o", id));
+        DeleteStrategyCommand delete =
+                DeleteStrategyCommand.create(new DeleteStrategyCommand("o", id));
         assertEquals("o", delete.ownerId());
     }
 }

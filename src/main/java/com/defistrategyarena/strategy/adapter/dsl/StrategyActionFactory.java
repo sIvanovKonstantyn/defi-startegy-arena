@@ -1,42 +1,40 @@
 package com.defistrategyarena.strategy.adapter.dsl;
 
 import com.defistrategyarena.strategy.domain.StrategyDefinition;
-import java.util.Objects;
+import java.util.Map;
+import java.util.function.Function;
 
-enum StrategyActionFactory {
-    ;
+public final class StrategyActionFactory {
 
-    private static final String ALLOCATION_REQUIRED = "allocation percent must not be blank";
-    private static final String INSTRUMENT_REQUIRED = "instrument must not be blank";
+    private static final String UNKNOWN_ACTION_TYPE = "unknown action type";
 
-    static StrategyDefinition.Action hold(StrategyRuleWire body) {
-        Objects.requireNonNull(body);
-        return new StrategyDefinition.Hold();
-    }
+    private static final Map<String, Function<StrategyActionWire, StrategyDefinition.Action>> ACTIONS =
+            Map.of(
+                    StrategyDslWireNames.ACTION_HOLD, ignored -> new StrategyDefinition.Hold(),
+                    StrategyDslWireNames.ACTION_BUY, StrategyActionFactory::buy,
+                    StrategyDslWireNames.ACTION_SELL, StrategyActionFactory::sell,
+                    StrategyDslWireNames.ACTION_OPEN_LP, StrategyActionFactory::openLp);
 
-    static StrategyDefinition.Action buy(StrategyRuleWire body) {
-        return new StrategyDefinition.Buy(requireInstrument(body), requireAllocation(body));
-    }
+    private StrategyActionFactory() {}
 
-    static StrategyDefinition.Action sell(StrategyRuleWire body) {
-        return new StrategyDefinition.Sell(requireInstrument(body), requireAllocation(body));
-    }
-
-    private static String requireInstrument(StrategyRuleWire body) {
-        String instrument =
-                StrategyWireText.orEmpty(new StrategyWireText.TextValue(body.instrument()));
-        if (instrument.isBlank()) {
-            throw new IllegalArgumentException(INSTRUMENT_REQUIRED);
+    public static StrategyDefinition.Action fromWire(StrategyActionWire wire) {
+        Function<StrategyActionWire, StrategyDefinition.Action> mapper = ACTIONS.get(wire.type());
+        if (mapper == null) {
+            throw new IllegalArgumentException(UNKNOWN_ACTION_TYPE);
         }
-        return instrument;
+        return mapper.apply(wire);
     }
 
-    private static String requireAllocation(StrategyRuleWire body) {
-        String allocation =
-                StrategyWireText.orEmpty(new StrategyWireText.TextValue(body.allocationPercent()));
-        if (allocation.isBlank()) {
-            throw new IllegalArgumentException(ALLOCATION_REQUIRED);
-        }
-        return allocation;
+    private static StrategyDefinition.Action buy(StrategyActionWire wire) {
+        return new StrategyDefinition.Buy(wire.instrument(), wire.allocationPercent());
+    }
+
+    private static StrategyDefinition.Action sell(StrategyActionWire wire) {
+        return new StrategyDefinition.Sell(wire.instrument(), wire.allocationPercent());
+    }
+
+    private static StrategyDefinition.Action openLp(StrategyActionWire wire) {
+        return new StrategyDefinition.OpenLp(
+                wire.instrumentPair(), wire.allocationPercent(), wire.yearlyFeePercent());
     }
 }

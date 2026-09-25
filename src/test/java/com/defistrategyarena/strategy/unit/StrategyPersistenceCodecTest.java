@@ -2,145 +2,52 @@ package com.defistrategyarena.strategy.unit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.defistrategyarena.strategy.adapter.persistence.StrategyDefinitionJsonCodec;
-import com.defistrategyarena.strategy.application.DuplicateStrategyException;
-import com.defistrategyarena.strategy.domain.Privacy;
-import com.defistrategyarena.strategy.domain.Strategy;
-import com.defistrategyarena.strategy.domain.StrategyDefinition;
-import com.defistrategyarena.strategy.domain.StrategyId;
-import java.util.List;
+import com.defistrategyarena.strategy.adapter.persistence.StrategyJsonMaps;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class StrategyPersistenceCodecTest {
 
-    private static final String NAME = "codec";
-    private static final String INSTRUMENT = "ETH-USD";
-    private static final String THRESHOLD = "10";
-    private static final String ALLOCATION = "5";
-    private static final String INDICATOR = "RSI";
-    private static final int VERSION = 3;
-
     @Test
-    void encode_decode_round_trips_all_rule_shapes() {
-        StrategyDefinition definition =
-                new StrategyDefinition(
-                        NAME,
-                        List.of(
-                                new StrategyDefinition.Rule(
-                                        "a",
-                                        new StrategyDefinition.PriceAbove(INSTRUMENT, THRESHOLD),
-                                        new StrategyDefinition.Hold()),
-                                new StrategyDefinition.Rule(
-                                        "b",
-                                        new StrategyDefinition.PriceUnder(INSTRUMENT, THRESHOLD),
-                                        new StrategyDefinition.Buy(INSTRUMENT, ALLOCATION)),
-                                new StrategyDefinition.Rule(
-                                        "c",
-                                        new StrategyDefinition.IndicatorBelow(INDICATOR, THRESHOLD),
-                                        new StrategyDefinition.Sell(INSTRUMENT, ALLOCATION)),
-                                new StrategyDefinition.Rule(
-                                        "d",
-                                        new StrategyDefinition.IndicatorAbove(INDICATOR, THRESHOLD),
-                                        new StrategyDefinition.Hold())));
-        String json = StrategyDefinitionJsonCodec.encode(definition);
-        StrategyDefinition decoded =
-                StrategyDefinitionJsonCodec.decode(new StrategyDefinitionJsonCodec.JsonPayload(json));
-        assertEquals(definition, decoded);
-    }
-
-    @Test
-    void decode_rejects_unknown_condition() {
+    void encodesAndDecodesMaps() {
         String json =
-                "{\"name\":\"n\",\"rules\":[{\"id\":\"r\",\"conditionType\":\"nope\",\"actionType\":\"hold\",\"instrument\":\"\",\"indicator\":\"\",\"threshold\":\"\",\"allocationPercent\":\"\"}]}";
-        assertThrows(
-                IllegalArgumentException.class,
-                () ->
-                        StrategyDefinitionJsonCodec.decode(
-                                new StrategyDefinitionJsonCodec.JsonPayload(json)));
+                StrategyJsonMaps.encode(
+                        new StrategyJsonMaps.MapPayload(Map.of("period", "50", "instrument", "ETH-USD")));
+        Map<String, String> decoded =
+                StrategyJsonMaps.decode(new StrategyJsonMaps.JsonPayload(json));
+        assertEquals("50", decoded.get("period"));
+        assertEquals("ETH-USD", decoded.get("instrument"));
     }
 
     @Test
-    void decode_rejects_unknown_action() {
-        String json =
-                "{\"name\":\"n\",\"rules\":[{\"id\":\"r\",\"conditionType\":\"price_above\",\"actionType\":\"nope\",\"instrument\":\"ETH\",\"indicator\":\"\",\"threshold\":\"1\",\"allocationPercent\":\"\"}]}";
-        assertThrows(
-                IllegalArgumentException.class,
-                () ->
-                        StrategyDefinitionJsonCodec.decode(
-                                new StrategyDefinitionJsonCodec.JsonPayload(json)));
+    void decodeBlankAndNullJsonReturnsEmpty() {
+        assertEquals(Map.of(), StrategyJsonMaps.decode(new StrategyJsonMaps.JsonPayload("")));
+        assertEquals(Map.of(), StrategyJsonMaps.decode(new StrategyJsonMaps.JsonPayload("   ")));
+        assertEquals(Map.of(), StrategyJsonMaps.decode(new StrategyJsonMaps.JsonPayload(null)));
+        assertEquals(Map.of(), StrategyJsonMaps.decode(new StrategyJsonMaps.JsonPayload("null")));
     }
 
     @Test
-    void decode_rejects_invalid_json() {
-        assertThrows(
-                IllegalStateException.class,
-                () ->
-                        StrategyDefinitionJsonCodec.decode(
-                                new StrategyDefinitionJsonCodec.JsonPayload("{")));
+    void mapPayloadNullValuesBecomesEmpty() {
+        String json = StrategyJsonMaps.encode(new StrategyJsonMaps.MapPayload(null));
+        assertEquals("{}", json);
     }
 
     @Test
-    void buy_without_instrument_rejected_on_decode() {
-        String json =
-                "{\"name\":\"n\",\"rules\":[{\"id\":\"r\",\"conditionType\":\"price_above\",\"actionType\":\"buy\",\"instrument\":\"\",\"indicator\":\"\",\"threshold\":\"1\",\"allocationPercent\":\"5\"}]}";
-        assertThrows(
-                IllegalArgumentException.class,
-                () ->
-                        StrategyDefinitionJsonCodec.decode(
-                                new StrategyDefinitionJsonCodec.JsonPayload(json)));
+    void nullPayloadRejected() {
+        assertThrows(NullPointerException.class, () -> StrategyJsonMaps.encode(null));
+        assertThrows(NullPointerException.class, () -> StrategyJsonMaps.decode(null));
     }
 
     @Test
-    void sell_without_allocation_rejected_on_decode() {
-        String json =
-                "{\"name\":\"n\",\"rules\":[{\"id\":\"r\",\"conditionType\":\"price_above\",\"actionType\":\"sell\",\"instrument\":\"ETH\",\"indicator\":\"\",\"threshold\":\"1\",\"allocationPercent\":\"\"}]}";
-        assertThrows(
-                IllegalArgumentException.class,
-                () ->
-                        StrategyDefinitionJsonCodec.decode(
-                                new StrategyDefinitionJsonCodec.JsonPayload(json)));
-    }
-
-    @Test
-    void rehydrate_rebuilds_aggregate() {
-        StrategyDefinition definition = new StrategyDefinition(NAME, List.of());
-        Strategy strategy =
-                Strategy.rehydrate(
-                        new Strategy.RehydrateData(
-                                new StrategyId("00000000-0000-0000-0000-000000000001"),
-                                "owner",
-                                Privacy.SHARED,
-                                VERSION,
-                                definition));
-        assertEquals(VERSION, strategy.current().number());
-        assertEquals(Privacy.SHARED, strategy.privacy());
-        assertEquals(NAME, strategy.current().definition().name());
-    }
-
-    @Test
-    void rehydrate_rejects_blank_owner() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () ->
-                        Strategy.rehydrate(
-                                new Strategy.RehydrateData(
-                                        new StrategyId("00000000-0000-0000-0000-000000000001"),
-                                        " ",
-                                        Privacy.PRIVATE,
-                                        VERSION,
-                                        new StrategyDefinition(NAME, List.of()))));
-    }
-
-    @Test
-    void rehydrate_rejects_null_data() {
-        assertThrows(NullPointerException.class, () -> Strategy.rehydrate(null));
-    }
-
-    @Test
-    void duplicate_exception_keeps_cause() {
-        RuntimeException cause = new RuntimeException("db");
-        DuplicateStrategyException ex = new DuplicateStrategyException(cause);
-        assertEquals(cause, ex.getCause());
+    void decodeInvalidJsonFails() {
+        IllegalStateException ex =
+                assertThrows(
+                        IllegalStateException.class,
+                        () -> StrategyJsonMaps.decode(new StrategyJsonMaps.JsonPayload("{")));
+        assertTrue(ex.getCause() instanceof JsonProcessingException);
     }
 }

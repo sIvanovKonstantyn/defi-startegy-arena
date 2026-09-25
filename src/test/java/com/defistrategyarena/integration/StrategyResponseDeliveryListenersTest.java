@@ -17,6 +17,7 @@ import com.defistrategyarena.shared.events.strategy.UpdateStrategyFailed;
 import com.defistrategyarena.shared.messaging.DomainEventListenerRegistry;
 import com.defistrategyarena.shared.realtime.UserSessionHub;
 import com.defistrategyarena.shared.realtime.UserSessionSocket;
+import com.defistrategyarena.strategy.testsupport.StrategyTestFixtures;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
@@ -28,11 +29,16 @@ class StrategyResponseDeliveryListenersTest {
     private static final String CORRELATION = "corr-1";
     private static final String OWNER = "owner-1";
     private static final String STRATEGY = "strategy-1";
+    private static final String NAME = "alpha";
+    private static final String DESCRIPTION = StrategyTestFixtures.DESCRIPTION;
+    private static final String PRIVACY = "PRIVATE";
+    private static final String RULE_ID = "r1";
     private static final String REASON = "BAD_REQUEST";
     private static final String KEY = "socket-1";
     private static final int VERSION = 2;
     private static final long TOTAL = 1L;
     private static final int EMPTY = 0;
+    private static final int GET_INDEX = 4;
     private static final int EXPECTED_MESSAGES = 10;
 
     @Test
@@ -55,7 +61,16 @@ class StrategyResponseDeliveryListenersTest {
         registry.dispatch(new ListStrategiesFailed(CORRELATION, OWNER, REASON));
         registry.dispatch(
                 new GetStrategyCompleted(
-                        CORRELATION, OWNER, STRATEGY, "alpha", "PRIVATE", VERSION, List.of()));
+                        CORRELATION,
+                        OWNER,
+                        STRATEGY,
+                        NAME,
+                        DESCRIPTION,
+                        PRIVACY,
+                        VERSION,
+                        List.of(StrategyTestFixtures.priceGtHoldPayload(RULE_ID)),
+                        GetStrategyCompleted.PENDING_METRIC,
+                        GetStrategyCompleted.PENDING_METRIC));
         registry.dispatch(new GetStrategyFailed(CORRELATION, OWNER, REASON));
         registry.dispatch(new UpdateStrategyCompleted(CORRELATION, OWNER, STRATEGY, VERSION));
         registry.dispatch(new UpdateStrategyFailed(CORRELATION, OWNER, REASON));
@@ -65,6 +80,11 @@ class StrategyResponseDeliveryListenersTest {
         assertEquals(EXPECTED_MESSAGES, socket.messages().size());
         assertTrue(socket.messages().get(EMPTY).contains("strategy.create"));
         assertTrue(socket.messages().get(EMPTY).contains(CORRELATION));
+        String getEnvelope = socket.messages().get(GET_INDEX);
+        assertTrue(getEnvelope.contains("strategy.get"));
+        assertTrue(getEnvelope.contains(DESCRIPTION));
+        assertTrue(getEnvelope.contains("drawdown"));
+        assertTrue(getEnvelope.contains(StrategyTestFixtures.CONDITION_PRICE_COMPARE));
     }
 
     @Test

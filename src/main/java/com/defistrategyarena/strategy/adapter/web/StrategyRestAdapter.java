@@ -68,7 +68,10 @@ public final class StrategyRestAdapter {
                     useCases.updateStrategy()
                             .execute(
                                     new UpdateStrategyCommand(
-                                            input.ownerId(), input.strategyId(), rules));
+                                            input.ownerId(),
+                                            input.strategyId(),
+                                            input.request().description(),
+                                            rules));
             if (result.isEmpty()) {
                 return new UpdateStrategyHttpResponse(STATUS_NOT_FOUND, EMPTY, EMPTY_VERSION);
             }
@@ -96,7 +99,8 @@ public final class StrategyRestAdapter {
     }
 
     private static StrategyDefinition toDefinition(CreateStrategyHttpRequest request) {
-        return StrategyDefinition.create(new StrategyDefinition(request.name(), toRules(request.rules())));
+        return StrategyDefinition.create(
+                new StrategyDefinition(request.name(), request.description(), toRules(request.rules())));
     }
 
     private static List<StrategyDefinition.Rule> toRules(List<CreateStrategyHttpRequest.RuleBody> bodies) {

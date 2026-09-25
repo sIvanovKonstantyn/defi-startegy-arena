@@ -40,9 +40,9 @@ class StrategyReadsHttpE2ETest {
     private static final String QUERY_SEP = "&";
     private static final String QUERY_EQ = "=";
     private static final String CREATE_BODY_A =
-            "{\"name\":\"alpha\",\"rules\":[{\"id\":\"r1\",\"conditionType\":\"price_above\",\"actionType\":\"hold\",\"instrument\":\"ETH-USD\",\"indicator\":\"\",\"threshold\":\"3000\",\"allocationPercent\":\"\"}]}";
+            "{\"name\":\"alpha\",\"rules\":[{\"id\":\"r1\",\"when\":{\"type\":\"price_compare\",\"instrument\":\"ETH-USD\",\"operator\":\"gt\",\"threshold\":\"3000\"},\"then\":{\"type\":\"hold\"}}]}";
     private static final String CREATE_BODY_B =
-            "{\"name\":\"beta\",\"rules\":[{\"id\":\"r1\",\"conditionType\":\"price_above\",\"actionType\":\"hold\",\"instrument\":\"ETH-USD\",\"indicator\":\"\",\"threshold\":\"3000\",\"allocationPercent\":\"\"}]}";
+            "{\"name\":\"beta\",\"rules\":[{\"id\":\"r1\",\"when\":{\"type\":\"price_compare\",\"instrument\":\"ETH-USD\",\"operator\":\"gt\",\"threshold\":\"3000\"},\"then\":{\"type\":\"hold\"}}]}";
 
     @Test
     void lists_and_gets_over_jetty_with_bearer() throws Exception {

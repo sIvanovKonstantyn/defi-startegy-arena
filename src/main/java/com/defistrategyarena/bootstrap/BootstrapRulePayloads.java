@@ -11,15 +11,7 @@ enum BootstrapRulePayloads {
     static List<CreateStrategyRequested.RulePayload> fromHttp(RuleBodies bodies) {
         List<CreateStrategyRequested.RulePayload> payloads = new ArrayList<>();
         for (CreateStrategyHttpRequest.RuleBody rule : bodies.rules()) {
-            payloads.add(
-                    new CreateStrategyRequested.RulePayload(
-                            rule.id(),
-                            rule.conditionType(),
-                            rule.actionType(),
-                            rule.instrument(),
-                            rule.indicator(),
-                            rule.threshold(),
-                            rule.allocationPercent()));
+            payloads.add(rule.toEvent());
         }
         return List.copyOf(payloads);
     }

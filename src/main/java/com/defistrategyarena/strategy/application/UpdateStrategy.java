@@ -30,7 +30,9 @@ public final class UpdateStrategy {
     private UpdateStrategyResult publishAndPersist(PublishPersistInput input) {
         Strategy updated =
                 input.existing()
-                        .publishNewVersion(new Strategy.PublishNewVersionData(input.command().rules()));
+                        .publishNewVersion(
+                                new Strategy.PublishNewVersionData(
+                                        input.command().description(), input.command().rules()));
         strategies.update(updated);
         events.publish(
                 StrategyVersionPublished.create(
