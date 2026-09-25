@@ -11,17 +11,22 @@ import org.jooq.Record;
 enum JooqStrategyRowMapper {
     ;
 
-    static Strategy toStrategy(Record record) {
+    static Strategy toStrategy(RowInput input) {
         StrategyDefinition definition =
-                StrategyDefinitionJsonCodec.decode(
-                        new StrategyDefinitionJsonCodec.JsonPayload(
-                                record.get(STRATEGIES.DEFINITION_JSON)));
+                input.graphStore()
+                        .loadDefinition(
+                                new StrategyGraphStore.LoadDefinitionCommand(
+                                        input.record().get(STRATEGIES.STRATEGY_ID),
+                                        input.record().get(STRATEGIES.NAME),
+                                        input.record().get(STRATEGIES.DESCRIPTION)));
         return Strategy.rehydrate(
                 new Strategy.RehydrateData(
-                        new StrategyId(record.get(STRATEGIES.STRATEGY_ID).toString()),
-                        record.get(STRATEGIES.OWNER_ID),
-                        Privacy.valueOf(record.get(STRATEGIES.PRIVACY)),
-                        record.get(STRATEGIES.VERSION_NUMBER),
+                        new StrategyId(input.record().get(STRATEGIES.STRATEGY_ID).toString()),
+                        input.record().get(STRATEGIES.OWNER_ID),
+                        Privacy.valueOf(input.record().get(STRATEGIES.PRIVACY)),
+                        input.record().get(STRATEGIES.VERSION_NUMBER),
                         definition));
     }
+
+    record RowInput(Record record, StrategyGraphStore graphStore) {}
 }

@@ -34,9 +34,9 @@ class StrategyUpdateDeleteHttpE2ETest {
     private static final String AUTHORIZATION = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String CREATE_BODY =
-            "{\"name\":\"alpha\",\"rules\":[{\"id\":\"r1\",\"conditionType\":\"price_above\",\"actionType\":\"hold\",\"instrument\":\"ETH-USD\",\"indicator\":\"\",\"threshold\":\"3000\",\"allocationPercent\":\"\"}]}";
+            "{\"name\":\"alpha\",\"rules\":[{\"id\":\"r1\",\"when\":{\"type\":\"price_compare\",\"instrument\":\"ETH-USD\",\"operator\":\"gt\",\"threshold\":\"3000\"},\"then\":{\"type\":\"hold\"}}]}";
     private static final String UPDATE_BODY =
-            "{\"rules\":[{\"id\":\"r2\",\"conditionType\":\"price_under\",\"actionType\":\"hold\",\"instrument\":\"ETH-USD\",\"indicator\":\"\",\"threshold\":\"2500\",\"allocationPercent\":\"\"}]}";
+            "{\"rules\":[{\"id\":\"r2\",\"when\":{\"type\":\"price_compare\",\"instrument\":\"ETH-USD\",\"operator\":\"lt\",\"threshold\":\"2500\"},\"then\":{\"type\":\"hold\"}}]}";
     private static final String EMPTY_RULES_BODY = "{\"rules\":[]}";
 
     @Test

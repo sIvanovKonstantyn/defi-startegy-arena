@@ -20,8 +20,10 @@ import com.defistrategyarena.strategy.application.GetStrategyQuery;
 import com.defistrategyarena.strategy.application.ListStrategies;
 import com.defistrategyarena.strategy.application.ListStrategiesQuery;
 import com.defistrategyarena.strategy.application.StrategyPage;
+import com.defistrategyarena.strategy.application.StrategyUseCases;
 import com.defistrategyarena.strategy.application.UpdateStrategy;
 import com.defistrategyarena.strategy.domain.StrategyId;
+import com.defistrategyarena.strategy.testsupport.StrategyTestFixtures;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,23 +38,31 @@ class StrategyReadsE2ETest {
     private static final int TOTAL_TWO = 2;
     private static final int TOTAL_PAGES_TWO = 2;
     private static final int PAGE_BEYOND = 5;
+    private static final int SINGLE_RULE = 1;
+    private static final int TWO_CHILDREN = 2;
+    private static final int VERSION_ONE = 1;
+    private static final int SECOND_INDEX = 1;
     private static final String OWNER = "owner-reads";
     private static final String OTHER_OWNER = "other-owner";
     private static final String NAME_A = "alpha";
     private static final String NAME_B = "beta";
+    private static final String NAME_LP = "lp-pair";
+    private static final String NAME_INDICATOR = "indicator-sell";
     private static final String EMPTY = "";
+    private static final String BLANK = " ";
+    private static final String STRATEGY_ID = "id";
+    private static final String PRIVACY_PRIVATE = "PRIVATE";
     private static final String UNKNOWN_ID = "00000000-0000-0000-0000-000000000099";
-    private static final String CONDITION_PRICE_ABOVE = "price_above";
-    private static final String CONDITION_PRICE_UNDER = "price_under";
-    private static final String CONDITION_INDICATOR_BELOW = "indicator_below";
-    private static final String CONDITION_INDICATOR_ABOVE = "indicator_above";
-    private static final String ACTION_HOLD = "hold";
-    private static final String ACTION_BUY = "buy";
-    private static final String ACTION_SELL = "sell";
-    private static final String INSTRUMENT = "ETH-USD";
-    private static final String INDICATOR = "RSI";
-    private static final String THRESHOLD = "3000";
-    private static final String ALLOCATION = "10";
+    private static final String RULE_ID = "r1";
+    private static final String SORT_CREATED_AT = "createdAt";
+    private static final String ORDER_UP = "up";
+    private static final int NEGATIVE_PAGE = -1;
+    private static final int ZERO_SIZE = 0;
+    private static final int ZERO_PAGES = 0;
+    private static final int ASCENDING = 0;
+    private static final int OVERSIZED_PAGE = 101;
+    private static final long ZERO_TOTAL = 0L;
+    private static final long ONE_TOTAL = 1L;
 
     private InMemoryStrategyRepository strategies;
     private StrategyRestAdapter http;
@@ -70,7 +80,8 @@ class StrategyReadsE2ETest {
         DeleteStrategy delete = new DeleteStrategy(new DeleteStrategy.DeleteStrategyDeps(strategies));
         http =
                 new StrategyRestAdapter(
-                        new StrategyRestAdapter.StrategyRestAdapterDeps(new com.defistrategyarena.strategy.application.StrategyUseCases(create, list, get, update, delete)));
+                        new StrategyRestAdapter.StrategyRestAdapterDeps(
+                                new StrategyUseCases(create, list, get, update, delete)));
     }
 
     @Test
@@ -90,7 +101,7 @@ class StrategyReadsE2ETest {
                 http.list(
                         new ListStrategiesQuery(
                                 OWNER,
-                                1,
+                                SECOND_INDEX,
                                 PAGE_SIZE_ONE,
                                 ListStrategiesQuery.SORT_NAME,
                                 ListStrategiesQuery.ORDER_ASC));
@@ -99,6 +110,7 @@ class StrategyReadsE2ETest {
         assertEquals(TOTAL_TWO, firstPage.totalElements());
         assertEquals(TOTAL_PAGES_TWO, firstPage.totalPages());
         assertEquals(NAME_A, firstPage.items().getFirst().name());
+        assertEquals(StrategyTestFixtures.DESCRIPTION, firstPage.items().getFirst().description());
         assertEquals(NAME_B, secondPage.items().getFirst().name());
     }
 
@@ -115,8 +127,9 @@ class StrategyReadsE2ETest {
                                 ListStrategiesQuery.SORT_STRATEGY_ID,
                                 ListStrategiesQuery.ORDER_DESC));
         assertEquals(STATUS_OK, response.status());
-        List<String> ids = response.items().stream().map(StrategySummaryHttpResponse::strategyId).toList();
-        assertTrue(ids.getFirst().compareTo(ids.get(1)) > 0);
+        List<String> ids =
+                response.items().stream().map(StrategySummaryHttpResponse::strategyId).toList();
+        assertTrue(ids.getFirst().compareTo(ids.get(SECOND_INDEX)) > ASCENDING);
         assertTrue(ids.contains(first.strategyId()));
         assertTrue(ids.contains(second.strategyId()));
     }
@@ -133,7 +146,7 @@ class StrategyReadsE2ETest {
                                 ListStrategiesQuery.SORT_NAME,
                                 ListStrategiesQuery.ORDER_ASC));
         assertEquals(STATUS_OK, response.status());
-        assertEquals(1L, response.totalElements());
+        assertEquals(ONE_TOTAL, response.totalElements());
         assertTrue(response.items().isEmpty());
     }
 
@@ -149,7 +162,7 @@ class StrategyReadsE2ETest {
                                 ListStrategiesQuery.SORT_NAME,
                                 ListStrategiesQuery.ORDER_ASC));
         assertEquals(STATUS_OK, response.status());
-        assertEquals(0L, response.totalElements());
+        assertEquals(ZERO_TOTAL, response.totalElements());
         assertTrue(response.items().isEmpty());
     }
 
@@ -160,7 +173,7 @@ class StrategyReadsE2ETest {
                 () ->
                         new ListStrategiesQuery(
                                 OWNER,
-                                -1,
+                                NEGATIVE_PAGE,
                                 ListStrategiesQuery.DEFAULT_SIZE,
                                 ListStrategiesQuery.SORT_NAME,
                                 ListStrategiesQuery.ORDER_ASC));
@@ -188,7 +201,7 @@ class StrategyReadsE2ETest {
                         new ListStrategiesQuery(
                                 OWNER,
                                 ListStrategiesQuery.DEFAULT_PAGE,
-                                0,
+                                ZERO_SIZE,
                                 ListStrategiesQuery.SORT_NAME,
                                 ListStrategiesQuery.ORDER_ASC));
         assertThrows(
@@ -197,7 +210,7 @@ class StrategyReadsE2ETest {
                         new ListStrategiesQuery(
                                 OWNER,
                                 ListStrategiesQuery.DEFAULT_PAGE,
-                                101,
+                                OVERSIZED_PAGE,
                                 ListStrategiesQuery.SORT_NAME,
                                 ListStrategiesQuery.ORDER_ASC));
         assertThrows(
@@ -207,7 +220,7 @@ class StrategyReadsE2ETest {
                                 OWNER,
                                 ListStrategiesQuery.DEFAULT_PAGE,
                                 ListStrategiesQuery.DEFAULT_SIZE,
-                                "createdAt",
+                                SORT_CREATED_AT,
                                 ListStrategiesQuery.ORDER_ASC));
         assertThrows(
                 IllegalArgumentException.class,
@@ -217,14 +230,18 @@ class StrategyReadsE2ETest {
                                 ListStrategiesQuery.DEFAULT_PAGE,
                                 ListStrategiesQuery.DEFAULT_SIZE,
                                 ListStrategiesQuery.SORT_NAME,
-                                "up"));
+                                ORDER_UP));
     }
 
     @Test
     void list_query_defaults_null_sort_and_order() {
         ListStrategiesQuery query =
                 new ListStrategiesQuery(
-                        OWNER, ListStrategiesQuery.DEFAULT_PAGE, ListStrategiesQuery.DEFAULT_SIZE, null, null);
+                        OWNER,
+                        ListStrategiesQuery.DEFAULT_PAGE,
+                        ListStrategiesQuery.DEFAULT_SIZE,
+                        null,
+                        null);
         ListStrategiesQuery created = ListStrategiesQuery.create(query);
         assertEquals(ListStrategiesQuery.SORT_NAME, created.sort());
         assertEquals(ListStrategiesQuery.ORDER_ASC, created.order());
@@ -237,79 +254,129 @@ class StrategyReadsE2ETest {
                 http.get(new GetStrategyQuery(OWNER, new StrategyId(created.strategyId())));
         assertEquals(STATUS_OK, detail.status());
         assertEquals(NAME_A, detail.name());
-        assertEquals(1, detail.rules().size());
-        assertEquals(CONDITION_PRICE_ABOVE, detail.rules().getFirst().conditionType());
+        assertEquals(StrategyTestFixtures.DESCRIPTION, detail.description());
+        assertEquals(VERSION_ONE, detail.versionNumber());
+        assertEquals(SINGLE_RULE, detail.rules().size());
+        CreateStrategyHttpRequest.RuleBody rule = detail.rules().getFirst();
+        assertEquals(RULE_ID, rule.id());
+        assertEquals(StrategyTestFixtures.CONDITION_PRICE_COMPARE, rule.when().type());
+        assertEquals(StrategyTestFixtures.OPERATOR_GT, rule.when().operator());
+        assertEquals(StrategyTestFixtures.THRESHOLD, rule.when().threshold());
+        assertEquals(StrategyTestFixtures.ACTION_HOLD, rule.then().type());
         assertTrue(strategies.get(new StrategyId(created.strategyId())).isPresent());
     }
 
     @Test
-    void gets_detail_for_all_dsl_variants() {
-        CreateStrategyHttpResponse under =
+    void gets_detail_for_and_tree_with_open_lp() {
+        CreateStrategyHttpResponse created =
                 http.create(
                         new StrategyRestAdapter.CreateStrategyHttpInput(
                                 OWNER,
-                                new CreateStrategyHttpRequest(
-                                        "under",
-                                        List.of(
-                                                new CreateStrategyHttpRequest.RuleBody(
-                                                        "r1",
-                                                        CONDITION_PRICE_UNDER,
-                                                        ACTION_SELL,
-                                                        INSTRUMENT,
-                                                        EMPTY,
-                                                        THRESHOLD,
-                                                        ALLOCATION)))));
-        CreateStrategyHttpResponse below =
+                                StrategyTestFixtures.createRequest(
+                                        NAME_LP, StrategyTestFixtures.andOpenLpBody(RULE_ID))));
+        assertEquals(STATUS_CREATED, created.status());
+
+        CreateStrategyHttpRequest.RuleBody rule =
+                http.get(new GetStrategyQuery(OWNER, new StrategyId(created.strategyId())))
+                        .rules()
+                        .getFirst();
+
+        assertEquals(StrategyTestFixtures.CONDITION_AND, rule.when().type());
+        assertEquals(TWO_CHILDREN, rule.when().children().size());
+        CreateStrategyHttpRequest.ConditionBody indicator = rule.when().children().getFirst();
+        assertEquals(StrategyTestFixtures.CONDITION_INDICATOR_COMPARE, indicator.type());
+        assertEquals(StrategyTestFixtures.INDICATOR_SMA, indicator.indicator());
+        assertEquals(StrategyTestFixtures.PERIOD_PARAMS, indicator.parameters());
+        CreateStrategyHttpRequest.ConditionBody price = rule.when().children().get(SECOND_INDEX);
+        assertEquals(StrategyTestFixtures.CONDITION_PRICE_COMPARE, price.type());
+        assertEquals(StrategyTestFixtures.INSTRUMENT, price.instrument());
+        assertEquals(StrategyTestFixtures.ACTION_OPEN_LP, rule.then().type());
+        assertEquals(StrategyTestFixtures.INSTRUMENT_PAIR, rule.then().instrumentPair());
+        assertEquals(StrategyTestFixtures.YEARLY_FEE, rule.then().yearlyFeePercent());
+    }
+
+    @Test
+    void gets_detail_for_or_tree_and_indicator_sell() {
+        CreateStrategyHttpResponse orCreated =
                 http.create(
                         new StrategyRestAdapter.CreateStrategyHttpInput(
                                 OWNER,
-                                new CreateStrategyHttpRequest(
-                                        "below",
-                                        List.of(
-                                                new CreateStrategyHttpRequest.RuleBody(
-                                                        "r1",
-                                                        CONDITION_INDICATOR_BELOW,
-                                                        ACTION_HOLD,
-                                                        EMPTY,
-                                                        INDICATOR,
-                                                        THRESHOLD,
-                                                        EMPTY)))));
-        CreateStrategyHttpResponse above =
+                                StrategyTestFixtures.createRequest(
+                                        NAME_B,
+                                        StrategyTestFixtures.rule(
+                                                RULE_ID,
+                                                StrategyTestFixtures.group(
+                                                        StrategyTestFixtures.CONDITION_OR,
+                                                        List.of(
+                                                                StrategyTestFixtures.priceCompare(
+                                                                        StrategyTestFixtures
+                                                                                .OPERATOR_GT,
+                                                                        StrategyTestFixtures
+                                                                                .THRESHOLD),
+                                                                StrategyTestFixtures.priceCompare(
+                                                                        StrategyTestFixtures
+                                                                                .OPERATOR_LT,
+                                                                        StrategyTestFixtures
+                                                                                .THRESHOLD_LOW))),
+                                                StrategyTestFixtures.hold()))));
+        CreateStrategyHttpResponse sellCreated =
                 http.create(
                         new StrategyRestAdapter.CreateStrategyHttpInput(
                                 OWNER,
-                                new CreateStrategyHttpRequest(
-                                        "above",
-                                        List.of(
-                                                new CreateStrategyHttpRequest.RuleBody(
-                                                        "r1",
-                                                        CONDITION_INDICATOR_ABOVE,
-                                                        ACTION_BUY,
-                                                        INSTRUMENT,
-                                                        INDICATOR,
-                                                        THRESHOLD,
-                                                        ALLOCATION)))));
-        assertEquals(STATUS_CREATED, under.status());
-        assertEquals(STATUS_CREATED, below.status());
-        assertEquals(STATUS_CREATED, above.status());
-        assertEquals(
-                CONDITION_PRICE_UNDER,
-                http.get(new GetStrategyQuery(OWNER, new StrategyId(under.strategyId())))
+                                StrategyTestFixtures.createRequest(
+                                        NAME_INDICATOR,
+                                        StrategyTestFixtures.rule(
+                                                RULE_ID,
+                                                StrategyTestFixtures.indicatorCompare(
+                                                        StrategyTestFixtures.INDICATOR_RSI,
+                                                        StrategyTestFixtures.OPERATOR_LT,
+                                                        StrategyTestFixtures.THRESHOLD_LOW,
+                                                        StrategyTestFixtures.PERIOD_PARAMS),
+                                                StrategyTestFixtures.sell(
+                                                        StrategyTestFixtures.ALLOCATION)))));
+        assertEquals(STATUS_CREATED, orCreated.status());
+        assertEquals(STATUS_CREATED, sellCreated.status());
+
+        CreateStrategyHttpRequest.RuleBody orRule =
+                http.get(new GetStrategyQuery(OWNER, new StrategyId(orCreated.strategyId())))
+                        .rules()
+                        .getFirst();
+        CreateStrategyHttpRequest.RuleBody sellRule =
+                http.get(new GetStrategyQuery(OWNER, new StrategyId(sellCreated.strategyId())))
+                        .rules()
+                        .getFirst();
+
+        assertEquals(StrategyTestFixtures.CONDITION_OR, orRule.when().type());
+        assertEquals(TWO_CHILDREN, orRule.when().children().size());
+        assertEquals(StrategyTestFixtures.CONDITION_INDICATOR_COMPARE, sellRule.when().type());
+        assertEquals(StrategyTestFixtures.ACTION_SELL, sellRule.then().type());
+        assertEquals(StrategyTestFixtures.ALLOCATION, sellRule.then().allocationPercent());
+    }
+
+    @Test
+    void gets_detail_for_buy_action() {
+        CreateStrategyHttpResponse created =
+                http.create(
+                        new StrategyRestAdapter.CreateStrategyHttpInput(
+                                OWNER,
+                                StrategyTestFixtures.createRequest(
+                                        NAME_A,
+                                        StrategyTestFixtures.rule(
+                                                RULE_ID,
+                                                StrategyTestFixtures.priceCompare(
+                                                        StrategyTestFixtures.OPERATOR_GT,
+                                                        StrategyTestFixtures.THRESHOLD),
+                                                StrategyTestFixtures.buy(
+                                                        StrategyTestFixtures.ALLOCATION)))));
+        assertEquals(STATUS_CREATED, created.status());
+        CreateStrategyHttpRequest.ActionBody then =
+                http.get(new GetStrategyQuery(OWNER, new StrategyId(created.strategyId())))
                         .rules()
                         .getFirst()
-                        .conditionType());
-        assertEquals(
-                CONDITION_INDICATOR_BELOW,
-                http.get(new GetStrategyQuery(OWNER, new StrategyId(below.strategyId())))
-                        .rules()
-                        .getFirst()
-                        .conditionType());
-        assertEquals(
-                ACTION_BUY,
-                http.get(new GetStrategyQuery(OWNER, new StrategyId(above.strategyId())))
-                        .rules()
-                        .getFirst()
-                        .actionType());
+                        .then();
+        assertEquals(StrategyTestFixtures.ACTION_BUY, then.type());
+        assertEquals(StrategyTestFixtures.INSTRUMENT, then.instrument());
+        assertEquals(StrategyTestFixtures.ALLOCATION, then.allocationPercent());
     }
 
     @Test
@@ -321,6 +388,7 @@ class StrategyReadsE2ETest {
                 http.get(new GetStrategyQuery(OWNER, new StrategyId(UNKNOWN_ID)));
         assertEquals(STATUS_NOT_FOUND, wrongOwner.status());
         assertEquals(STATUS_NOT_FOUND, unknown.status());
+        assertTrue(unknown.rules().isEmpty());
     }
 
     @Test
@@ -328,8 +396,10 @@ class StrategyReadsE2ETest {
         CreateStrategyHttpResponse created = createNamed(NAME_A);
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new GetStrategyQuery(" ", new StrategyId(created.strategyId())));
-        assertThrows(IllegalArgumentException.class, () -> new GetStrategyQuery(null, new StrategyId(created.strategyId())));
+                () -> new GetStrategyQuery(BLANK, new StrategyId(created.strategyId())));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new GetStrategyQuery(null, new StrategyId(created.strategyId())));
         assertThrows(IllegalArgumentException.class, () -> new GetStrategyQuery(OWNER, null));
         GetStrategyQuery query = new GetStrategyQuery(OWNER, new StrategyId(created.strategyId()));
         assertEquals(OWNER, GetStrategyQuery.create(query).ownerId());
@@ -337,17 +407,17 @@ class StrategyReadsE2ETest {
 
     @Test
     void strategy_page_and_http_dto_factories() {
-        StrategyPage page = StrategyPage.create(new StrategyPage(List.of(), 0L));
+        StrategyPage page = StrategyPage.create(new StrategyPage(List.of(), ZERO_TOTAL));
         assertTrue(page.items().isEmpty());
-        assertThrows(IllegalArgumentException.class, () -> new StrategyPage(null, 0L));
+        assertThrows(IllegalArgumentException.class, () -> new StrategyPage(null, ZERO_TOTAL));
         StrategyListHttpResponse list =
                 StrategyListHttpResponse.create(
                         new StrategyListHttpResponse(
                                 STATUS_OK,
                                 ListStrategiesQuery.DEFAULT_PAGE,
                                 ListStrategiesQuery.DEFAULT_SIZE,
-                                0L,
-                                0,
+                                ZERO_TOTAL,
+                                ZERO_PAGES,
                                 ListStrategiesQuery.SORT_NAME,
                                 ListStrategiesQuery.ORDER_ASC,
                                 List.of()));
@@ -359,22 +429,48 @@ class StrategyReadsE2ETest {
                                 STATUS_OK,
                                 ListStrategiesQuery.DEFAULT_PAGE,
                                 ListStrategiesQuery.DEFAULT_SIZE,
-                                0L,
-                                0,
+                                ZERO_TOTAL,
+                                ZERO_PAGES,
                                 ListStrategiesQuery.SORT_NAME,
                                 ListStrategiesQuery.ORDER_ASC,
                                 null));
         StrategyDetailHttpResponse detail =
                 StrategyDetailHttpResponse.create(
-                        new StrategyDetailHttpResponse(STATUS_OK, "id", NAME_A, "PRIVATE", 1, List.of()));
+                        new StrategyDetailHttpResponse(
+                                STATUS_OK,
+                                STRATEGY_ID,
+                                NAME_A,
+                                StrategyTestFixtures.DESCRIPTION,
+                                PRIVACY_PRIVATE,
+                                VERSION_ONE,
+                                List.of(),
+                                EMPTY,
+                                EMPTY));
         assertEquals(NAME_A, detail.name());
+        assertEquals(StrategyTestFixtures.DESCRIPTION, detail.description());
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new StrategyDetailHttpResponse(STATUS_OK, "id", NAME_A, "PRIVATE", 1, null));
+                () ->
+                        new StrategyDetailHttpResponse(
+                                STATUS_OK,
+                                STRATEGY_ID,
+                                NAME_A,
+                                StrategyTestFixtures.DESCRIPTION,
+                                PRIVACY_PRIVATE,
+                                VERSION_ONE,
+                                null,
+                                EMPTY,
+                                EMPTY));
         StrategySummaryHttpResponse summary =
                 StrategySummaryHttpResponse.create(
-                        new StrategySummaryHttpResponse("id", NAME_A, "PRIVATE", 1));
+                        new StrategySummaryHttpResponse(
+                                STRATEGY_ID,
+                                NAME_A,
+                                StrategyTestFixtures.DESCRIPTION,
+                                PRIVACY_PRIVATE,
+                                VERSION_ONE));
         assertEquals(NAME_A, summary.name());
+        assertEquals(StrategyTestFixtures.DESCRIPTION, summary.description());
     }
 
     private CreateStrategyHttpResponse createNamed(String name) {
@@ -382,17 +478,8 @@ class StrategyReadsE2ETest {
                 http.create(
                         new StrategyRestAdapter.CreateStrategyHttpInput(
                                 OWNER,
-                                new CreateStrategyHttpRequest(
-                                        name,
-                                        List.of(
-                                                new CreateStrategyHttpRequest.RuleBody(
-                                                        "r1",
-                                                        CONDITION_PRICE_ABOVE,
-                                                        ACTION_HOLD,
-                                                        INSTRUMENT,
-                                                        EMPTY,
-                                                        THRESHOLD,
-                                                        EMPTY)))));
+                                StrategyTestFixtures.createRequest(
+                                        name, StrategyTestFixtures.priceGtHoldBody(RULE_ID))));
         assertEquals(STATUS_CREATED, response.status());
         return response;
     }

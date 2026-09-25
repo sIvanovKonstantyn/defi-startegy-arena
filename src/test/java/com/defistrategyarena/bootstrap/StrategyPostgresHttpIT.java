@@ -36,11 +36,11 @@ class StrategyPostgresHttpIT {
     private static final String DB_NAME = "strategy_http_it";
     private static final String CREATE_BODY =
             """
-            {"name":"pg-crud","rules":[{"id":"r1","conditionType":"price_above","actionType":"hold","instrument":"ETH-USD","indicator":"","threshold":"3000","allocationPercent":""}]}
+            {"name":"pg-crud","description":"pg description","rules":[{"id":"r1","when":{"type":"and","children":[{"type":"indicator_compare","indicator":"sma","operator":"lt","threshold":"3000","parameters":{"period":"14"}},{"type":"price_compare","instrument":"ETH-USD","operator":"gt","threshold":"2500"}]},"then":{"type":"open_lp","instrumentPair":"ETH-USDC","allocationPercent":"10","yearlyFeePercent":"0.3"}}]}
             """;
     private static final String UPDATE_BODY =
             """
-            {"rules":[{"id":"r1","conditionType":"price_under","actionType":"hold","instrument":"ETH-USD","indicator":"","threshold":"2500","allocationPercent":""}]}
+            {"description":"pg description v2","rules":[{"id":"r1","when":{"type":"price_compare","instrument":"ETH-USD","operator":"lt","threshold":"2500"},"then":{"type":"hold"}}]}
             """;
 
     @Test

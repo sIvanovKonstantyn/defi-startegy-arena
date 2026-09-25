@@ -12,15 +12,16 @@ import com.defistrategyarena.strategy.adapter.web.CreateStrategyHttpResponse;
 import com.defistrategyarena.strategy.adapter.web.DeleteStrategyHttpResponse;
 import com.defistrategyarena.strategy.adapter.web.StrategyDetailHttpResponse;
 import com.defistrategyarena.strategy.adapter.web.StrategyRestAdapter;
-import com.defistrategyarena.strategy.adapter.web.UpdateStrategyHttpRequest;
 import com.defistrategyarena.strategy.adapter.web.UpdateStrategyHttpResponse;
 import com.defistrategyarena.strategy.application.CreateStrategy;
 import com.defistrategyarena.strategy.application.DeleteStrategy;
 import com.defistrategyarena.strategy.application.GetStrategy;
 import com.defistrategyarena.strategy.application.GetStrategyQuery;
 import com.defistrategyarena.strategy.application.ListStrategies;
+import com.defistrategyarena.strategy.application.StrategyUseCases;
 import com.defistrategyarena.strategy.application.UpdateStrategy;
 import com.defistrategyarena.strategy.domain.StrategyId;
+import com.defistrategyarena.strategy.testsupport.StrategyTestFixtures;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,17 +35,16 @@ class StrategyUpdateDeleteE2ETest {
     private static final int STATUS_NOT_FOUND = 404;
     private static final int VERSION_ONE = 1;
     private static final int VERSION_TWO = 2;
+    private static final int SINGLE_EVENT = 1;
+    private static final int TWO_CHILDREN = 2;
     private static final String OWNER = "owner-update";
     private static final String OTHER = "other-owner";
     private static final String NAME = "mutable-rules";
-    private static final String EMPTY = "";
+    private static final String BLANK = " ";
     private static final String UNKNOWN_ID = "00000000-0000-0000-0000-000000000099";
-    private static final String CONDITION_PRICE_ABOVE = "price_above";
-    private static final String CONDITION_PRICE_UNDER = "price_under";
-    private static final String ACTION_HOLD = "hold";
-    private static final String INSTRUMENT = "ETH-USD";
-    private static final String THRESHOLD = "3000";
-    private static final String THRESHOLD_NEW = "2500";
+    private static final String CONDITION_UNKNOWN = "moon_phase";
+    private static final String RULE_ID = "r1";
+    private static final String RULE_ID_TWO = "r2";
 
     private InMemoryStrategyRepository strategies;
     private RecordingEventPublisher events;
@@ -63,7 +63,8 @@ class StrategyUpdateDeleteE2ETest {
         DeleteStrategy delete = new DeleteStrategy(new DeleteStrategy.DeleteStrategyDeps(strategies));
         http =
                 new StrategyRestAdapter(
-                        new StrategyRestAdapter.StrategyRestAdapterDeps(new com.defistrategyarena.strategy.application.StrategyUseCases(create, list, get, update, delete)));
+                        new StrategyRestAdapter.StrategyRestAdapterDeps(
+                                new StrategyUseCases(create, list, get, update, delete)));
     }
 
     @Test
@@ -72,29 +73,41 @@ class StrategyUpdateDeleteE2ETest {
         events.clear();
 
         UpdateStrategyHttpResponse updated =
-                http.update(
-                        new StrategyRestAdapter.UpdateStrategyHttpInput(
-                                OWNER,
-                                new StrategyId(created.strategyId()),
-                                new UpdateStrategyHttpRequest(List.of(priceUnderHold("r2")))));
+                update(created.strategyId(), StrategyTestFixtures.priceLtHoldBody(RULE_ID_TWO));
 
         assertEquals(STATUS_OK, updated.status());
         assertEquals(created.strategyId(), updated.strategyId());
         assertEquals(VERSION_TWO, updated.versionNumber());
 
-        StrategyDetailHttpResponse detail =
-                http.get(new GetStrategyQuery(OWNER, new StrategyId(created.strategyId())));
+        StrategyDetailHttpResponse detail = detail(created.strategyId());
         assertEquals(NAME, detail.name());
         assertEquals(VERSION_TWO, detail.versionNumber());
-        assertEquals(CONDITION_PRICE_UNDER, detail.rules().getFirst().conditionType());
-        assertEquals(THRESHOLD_NEW, detail.rules().getFirst().threshold());
+        CreateStrategyHttpRequest.RuleBody rule = detail.rules().getFirst();
+        assertEquals(RULE_ID_TWO, rule.id());
+        assertEquals(StrategyTestFixtures.CONDITION_PRICE_COMPARE, rule.when().type());
+        assertEquals(StrategyTestFixtures.OPERATOR_LT, rule.when().operator());
+        assertEquals(StrategyTestFixtures.THRESHOLD_LOW, rule.when().threshold());
 
-        assertEquals(1, events.published().size());
-        StrategyVersionPublished event =
-                (StrategyVersionPublished) events.published().getFirst();
+        assertEquals(SINGLE_EVENT, events.published().size());
+        StrategyVersionPublished event = (StrategyVersionPublished) events.published().getFirst();
         assertEquals(created.strategyId(), event.strategyId());
         assertEquals(VERSION_TWO, event.versionNumber());
         assertEquals(OWNER, event.ownerId());
+    }
+
+    @Test
+    void updates_to_and_tree_with_open_lp_action() {
+        CreateStrategyHttpResponse created = createNamed();
+
+        UpdateStrategyHttpResponse updated =
+                update(created.strategyId(), StrategyTestFixtures.andOpenLpBody(RULE_ID_TWO));
+
+        assertEquals(STATUS_OK, updated.status());
+        CreateStrategyHttpRequest.RuleBody rule = detail(created.strategyId()).rules().getFirst();
+        assertEquals(StrategyTestFixtures.CONDITION_AND, rule.when().type());
+        assertEquals(TWO_CHILDREN, rule.when().children().size());
+        assertEquals(StrategyTestFixtures.ACTION_OPEN_LP, rule.then().type());
+        assertEquals(StrategyTestFixtures.INSTRUMENT_PAIR, rule.then().instrumentPair());
     }
 
     @Test
@@ -105,19 +118,18 @@ class StrategyUpdateDeleteE2ETest {
                         new StrategyRestAdapter.UpdateStrategyHttpInput(
                                 OTHER,
                                 new StrategyId(created.strategyId()),
-                                new UpdateStrategyHttpRequest(List.of(priceUnderHold("r2")))));
+                                StrategyTestFixtures.updateRequest(
+                                        List.of(StrategyTestFixtures.priceLtHoldBody(RULE_ID_TWO)))));
         UpdateStrategyHttpResponse unknown =
                 http.update(
                         new StrategyRestAdapter.UpdateStrategyHttpInput(
                                 OWNER,
                                 new StrategyId(UNKNOWN_ID),
-                                new UpdateStrategyHttpRequest(List.of(priceUnderHold("r2")))));
+                                StrategyTestFixtures.updateRequest(
+                                        List.of(StrategyTestFixtures.priceLtHoldBody(RULE_ID_TWO)))));
         assertEquals(STATUS_NOT_FOUND, wrongOwner.status());
         assertEquals(STATUS_NOT_FOUND, unknown.status());
-        assertEquals(
-                VERSION_ONE,
-                http.get(new GetStrategyQuery(OWNER, new StrategyId(created.strategyId())))
-                        .versionNumber());
+        assertEquals(VERSION_ONE, detail(created.strategyId()).versionNumber());
     }
 
     @Test
@@ -128,24 +140,39 @@ class StrategyUpdateDeleteE2ETest {
                         new StrategyRestAdapter.UpdateStrategyHttpInput(
                                 OWNER,
                                 new StrategyId(created.strategyId()),
-                                new UpdateStrategyHttpRequest(List.of())));
-        UpdateStrategyHttpResponse invalid =
-                http.update(
-                        new StrategyRestAdapter.UpdateStrategyHttpInput(
-                                OWNER,
-                                new StrategyId(created.strategyId()),
-                                new UpdateStrategyHttpRequest(
-                                        List.of(
-                                                new CreateStrategyHttpRequest.RuleBody(
-                                                        "r1",
-                                                        "moon_phase",
-                                                        ACTION_HOLD,
-                                                        INSTRUMENT,
-                                                        EMPTY,
-                                                        THRESHOLD,
-                                                        EMPTY)))));
+                                StrategyTestFixtures.updateRequest(List.of())));
+        UpdateStrategyHttpResponse unknownCondition =
+                update(
+                        created.strategyId(),
+                        StrategyTestFixtures.rule(
+                                RULE_ID,
+                                StrategyTestFixtures.group(CONDITION_UNKNOWN, List.of()),
+                                StrategyTestFixtures.hold()));
+        UpdateStrategyHttpResponse emptyAnd =
+                update(
+                        created.strategyId(),
+                        StrategyTestFixtures.rule(
+                                RULE_ID,
+                                StrategyTestFixtures.group(
+                                        StrategyTestFixtures.CONDITION_AND, List.of()),
+                                StrategyTestFixtures.hold()));
+        UpdateStrategyHttpResponse unknownIndicator =
+                update(
+                        created.strategyId(),
+                        StrategyTestFixtures.rule(
+                                RULE_ID,
+                                StrategyTestFixtures.indicatorCompare(
+                                        CONDITION_UNKNOWN,
+                                        StrategyTestFixtures.OPERATOR_LT,
+                                        StrategyTestFixtures.THRESHOLD,
+                                        StrategyTestFixtures.PERIOD_PARAMS),
+                                StrategyTestFixtures.hold()));
+
         assertEquals(STATUS_BAD_REQUEST, emptyRules.status());
-        assertEquals(STATUS_BAD_REQUEST, invalid.status());
+        assertEquals(STATUS_BAD_REQUEST, unknownCondition.status());
+        assertEquals(STATUS_BAD_REQUEST, emptyAnd.status());
+        assertEquals(STATUS_BAD_REQUEST, unknownIndicator.status());
+        assertEquals(VERSION_ONE, detail(created.strategyId()).versionNumber());
     }
 
     @Test
@@ -157,9 +184,7 @@ class StrategyUpdateDeleteE2ETest {
                                 OWNER, new StrategyId(created.strategyId())));
         assertEquals(STATUS_OK, deleted.status());
         assertEquals(created.strategyId(), deleted.strategyId());
-        assertEquals(
-                STATUS_NOT_FOUND,
-                http.get(new GetStrategyQuery(OWNER, new StrategyId(created.strategyId()))).status());
+        assertEquals(STATUS_NOT_FOUND, detail(created.strategyId()).status());
         assertTrue(strategies.get(new StrategyId(created.strategyId())).isEmpty());
     }
 
@@ -180,13 +205,14 @@ class StrategyUpdateDeleteE2ETest {
         UpdateStrategyHttpResponse update =
                 http.update(
                         new StrategyRestAdapter.UpdateStrategyHttpInput(
-                                " ",
+                                BLANK,
                                 new StrategyId(created.strategyId()),
-                                new UpdateStrategyHttpRequest(List.of(priceUnderHold("r2")))));
+                                StrategyTestFixtures.updateRequest(
+                                        List.of(StrategyTestFixtures.priceLtHoldBody(RULE_ID_TWO)))));
         DeleteStrategyHttpResponse delete =
                 http.delete(
                         new StrategyRestAdapter.DeleteStrategyHttpInput(
-                                " ", new StrategyId(created.strategyId())));
+                                BLANK, new StrategyId(created.strategyId())));
         assertEquals(STATUS_BAD_REQUEST, update.status());
         assertEquals(STATUS_BAD_REQUEST, delete.status());
     }
@@ -195,19 +221,24 @@ class StrategyUpdateDeleteE2ETest {
         CreateStrategyHttpResponse response =
                 http.create(
                         new StrategyRestAdapter.CreateStrategyHttpInput(
-                                OWNER, new CreateStrategyHttpRequest(NAME, List.of(priceAboveHold("r1")))));
+                                OWNER,
+                                StrategyTestFixtures.createRequest(
+                                        NAME, StrategyTestFixtures.priceGtHoldBody(RULE_ID))));
         assertEquals(STATUS_CREATED, response.status());
         return response;
     }
 
-    private static CreateStrategyHttpRequest.RuleBody priceAboveHold(String id) {
-        return new CreateStrategyHttpRequest.RuleBody(
-                id, CONDITION_PRICE_ABOVE, ACTION_HOLD, INSTRUMENT, EMPTY, THRESHOLD, EMPTY);
+    private UpdateStrategyHttpResponse update(
+            String strategyId, CreateStrategyHttpRequest.RuleBody rule) {
+        return http.update(
+                new StrategyRestAdapter.UpdateStrategyHttpInput(
+                        OWNER,
+                        new StrategyId(strategyId),
+                        StrategyTestFixtures.updateRequest(List.of(rule))));
     }
 
-    private static CreateStrategyHttpRequest.RuleBody priceUnderHold(String id) {
-        return new CreateStrategyHttpRequest.RuleBody(
-                id, CONDITION_PRICE_UNDER, ACTION_HOLD, INSTRUMENT, EMPTY, THRESHOLD_NEW, EMPTY);
+    private StrategyDetailHttpResponse detail(String strategyId) {
+        return http.get(new GetStrategyQuery(OWNER, new StrategyId(strategyId)));
     }
 
     private static final class RecordingEventPublisher implements DomainEventPublisher {
@@ -219,7 +250,7 @@ class StrategyUpdateDeleteE2ETest {
         }
 
         private List<DomainEvent> published() {
-            return published;
+            return List.copyOf(published);
         }
 
         private void clear() {

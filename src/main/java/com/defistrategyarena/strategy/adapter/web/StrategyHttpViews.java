@@ -1,5 +1,6 @@
 package com.defistrategyarena.strategy.adapter.web;
 
+import com.defistrategyarena.shared.events.strategy.GetStrategyCompleted;
 import com.defistrategyarena.shared.events.strategy.ListStrategiesCompleted;
 import com.defistrategyarena.strategy.application.ListStrategiesQuery;
 import com.defistrategyarena.strategy.application.StrategyPage;
@@ -41,26 +42,42 @@ public enum StrategyHttpViews {
                 STATUS_OK,
                 fields.strategyId(),
                 fields.name(),
+                fields.description(),
                 fields.privacy(),
                 fields.versionNumber(),
-                StrategyRuleHttpMapper.toBodies(strategy.current().definition().rules()));
+                StrategyRuleHttpMapper.toBodies(strategy.current().definition().rules()),
+                GetStrategyCompleted.PENDING_METRIC,
+                GetStrategyCompleted.PENDING_METRIC);
     }
 
     static StrategyDetailHttpResponse notFoundDetail() {
         return new StrategyDetailHttpResponse(
-                STATUS_NOT_FOUND, EMPTY, EMPTY, EMPTY, EMPTY_VERSION, List.of());
+                STATUS_NOT_FOUND,
+                EMPTY,
+                EMPTY,
+                EMPTY,
+                EMPTY,
+                EMPTY_VERSION,
+                List.of(),
+                GetStrategyCompleted.PENDING_METRIC,
+                GetStrategyCompleted.PENDING_METRIC);
     }
 
     private static StrategySummaryHttpResponse toSummary(Strategy strategy) {
         StrategyViewFields fields = viewFields(strategy);
         return new StrategySummaryHttpResponse(
-                fields.strategyId(), fields.name(), fields.privacy(), fields.versionNumber());
+                fields.strategyId(),
+                fields.name(),
+                fields.description(),
+                fields.privacy(),
+                fields.versionNumber());
     }
 
     private static StrategyViewFields viewFields(Strategy strategy) {
         return new StrategyViewFields(
                 strategy.id().value(),
                 strategy.current().definition().name(),
+                strategy.current().definition().description(),
                 strategy.privacy().name(),
                 strategy.current().number());
     }
@@ -68,18 +85,29 @@ public enum StrategyHttpViews {
     public static StrategyProjection projection(Strategy strategy) {
         StrategyViewFields fields = viewFields(strategy);
         return new StrategyProjection(
-                fields.strategyId(), fields.name(), fields.privacy(), fields.versionNumber());
+                fields.strategyId(),
+                fields.name(),
+                fields.description(),
+                fields.privacy(),
+                fields.versionNumber());
     }
 
     public static ListStrategiesCompleted.StrategySummaryPayload toEventSummary(Strategy strategy) {
         StrategyProjection fields = projection(strategy);
         return new ListStrategiesCompleted.StrategySummaryPayload(
-                fields.strategyId(), fields.name(), fields.privacy(), fields.versionNumber());
+                fields.strategyId(),
+                fields.name(),
+                fields.description(),
+                fields.privacy(),
+                fields.versionNumber());
     }
 
     public record StrategyProjection(
-            String strategyId, String name, String privacy, int versionNumber) {}
-
+            String strategyId,
+            String name,
+            String description,
+            String privacy,
+            int versionNumber) {}
 
     private static int totalPages(TotalPagesInput input) {
         if (input.totalElements() == EMPTY_TOTAL_ELEMENTS) {
@@ -94,5 +122,9 @@ public enum StrategyHttpViews {
     private record TotalPagesInput(long totalElements, int size) {}
 
     private record StrategyViewFields(
-            String strategyId, String name, String privacy, int versionNumber) {}
+            String strategyId,
+            String name,
+            String description,
+            String privacy,
+            int versionNumber) {}
 }

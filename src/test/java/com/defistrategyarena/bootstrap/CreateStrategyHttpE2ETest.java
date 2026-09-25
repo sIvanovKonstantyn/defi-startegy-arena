@@ -35,7 +35,7 @@ class CreateStrategyHttpE2ETest {
     private static final String VALID_BODY =
             "{\"name\":\""
                     + NAME
-                    + "\",\"rules\":[{\"id\":\"r1\",\"conditionType\":\"price_above\",\"actionType\":\"hold\",\"instrument\":\"ETH-USD\",\"indicator\":\"\",\"threshold\":\"3000\",\"allocationPercent\":\"\"}]}";
+                    + "\",\"rules\":[{\"id\":\"r1\",\"when\":{\"type\":\"price_compare\",\"instrument\":\"ETH-USD\",\"operator\":\"gt\",\"threshold\":\"3000\"},\"then\":{\"type\":\"hold\"}}]}";
     private static final String INVALID_BODY = "{not-json";
 
     @Test

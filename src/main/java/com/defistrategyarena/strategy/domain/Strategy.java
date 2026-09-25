@@ -41,9 +41,11 @@ public final class Strategy {
 
     public Strategy publishNewVersion(PublishNewVersionData data) {
         Objects.requireNonNull(data, PUBLISH_DATA_REQUIRED);
+        StrategyDefinition currentDefinition = current.definition();
         StrategyDefinition nextDefinition =
                 StrategyDefinition.create(
-                        new StrategyDefinition(current.definition().name(), data.rules()));
+                        new StrategyDefinition(
+                                currentDefinition.name(), data.description(), data.rules()));
         return new Strategy(id, ownerId, privacy, current.next(nextDefinition));
     }
 
@@ -83,8 +85,13 @@ public final class Strategy {
 
     public record CreateStrategyData(String ownerId, StrategyDefinition definition) {}
 
-    public record PublishNewVersionData(List<StrategyDefinition.Rule> rules) {
+    public record PublishNewVersionData(String description, List<StrategyDefinition.Rule> rules) {
+        private static final String DESCRIPTION_REQUIRED = "strategy description must not be null";
+
         public PublishNewVersionData {
+            if (description == null) {
+                throw new IllegalArgumentException(DESCRIPTION_REQUIRED);
+            }
             rules = NonEmptyRuleList.copyRequired(rules);
         }
     }

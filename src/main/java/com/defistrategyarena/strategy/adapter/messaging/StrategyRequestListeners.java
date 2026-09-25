@@ -84,6 +84,7 @@ public final class StrategyRequestListeners {
                                                         StrategyDefinition.create(
                                                                 new StrategyDefinition(
                                                                         event.name(),
+                                                                        event.description(),
                                                                         StrategyEventRuleMapper.toRules(
                                                                                 new StrategyEventRuleMapper
                                                                                         .RulePayloadList(
@@ -156,11 +157,14 @@ public final class StrategyRequestListeners {
                                 event.ownerId(),
                                 projection.strategyId(),
                                 projection.name(),
+                                projection.description(),
                                 projection.privacy(),
                                 projection.versionNumber(),
                                 StrategyEventRuleMapper.toPayloads(
                                         new StrategyEventRuleMapper.RuleDomainList(
-                                                strategy.current().definition().rules()))));
+                                                strategy.current().definition().rules())),
+                                GetStrategyCompleted.PENDING_METRIC,
+                                GetStrategyCompleted.PENDING_METRIC));
             } catch (IllegalArgumentException exception) {
                 events.publish(
                         new GetStrategyFailed(
@@ -178,6 +182,7 @@ public final class StrategyRequestListeners {
                                         new UpdateStrategyCommand(
                                                 event.ownerId(),
                                                 new StrategyId(event.strategyId()),
+                                                event.description(),
                                                 StrategyEventRuleMapper.toRules(
                                                         new StrategyEventRuleMapper.RulePayloadList(
                                                                 event.rules()))));

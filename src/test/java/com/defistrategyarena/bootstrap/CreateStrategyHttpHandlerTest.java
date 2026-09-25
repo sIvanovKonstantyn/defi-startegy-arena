@@ -24,7 +24,7 @@ class CreateStrategyHttpHandlerTest {
     private static final String PASSWORD = "secret-value";
     private static final String DISPLAY_NAME = "CreateHandler";
     private static final String VALID_BODY =
-            "{\"name\":\"n\",\"rules\":[{\"id\":\"r1\",\"conditionType\":\"price_above\",\"actionType\":\"hold\",\"instrument\":\"ETH-USD\",\"indicator\":\"\",\"threshold\":\"3000\",\"allocationPercent\":\"\"}]}";
+            "{\"name\":\"n\",\"rules\":[{\"id\":\"r1\",\"when\":{\"type\":\"price_compare\",\"instrument\":\"ETH-USD\",\"operator\":\"gt\",\"threshold\":\"3000\"},\"then\":{\"type\":\"hold\"}}]}";
     private static final String AUTHORIZATION = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
 

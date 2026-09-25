@@ -12,5 +12,9 @@ public record ListStrategiesCompleted(
     }
 
     public record StrategySummaryPayload(
-            String strategyId, String name, String privacy, int versionNumber) {}
+            String strategyId,
+            String name,
+            String description,
+            String privacy,
+            int versionNumber) {}
 }

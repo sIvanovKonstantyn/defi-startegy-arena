@@ -7,9 +7,12 @@ public record StrategyDetailHttpResponse(
         int status,
         String strategyId,
         String name,
+        String description,
         String privacy,
         int versionNumber,
-        List<CreateStrategyHttpRequest.RuleBody> rules)
+        List<CreateStrategyHttpRequest.RuleBody> rules,
+        String pnl,
+        String drawdown)
         implements JsonHttpResult {
 
     private static final String RULES_REQUIRED = "rules must not be null";
@@ -26,8 +29,11 @@ public record StrategyDetailHttpResponse(
                 draft.status(),
                 draft.strategyId(),
                 draft.name(),
+                draft.description(),
                 draft.privacy(),
                 draft.versionNumber(),
-                draft.rules());
+                draft.rules(),
+                draft.pnl(),
+                draft.drawdown());
     }
 }

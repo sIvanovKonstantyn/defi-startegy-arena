@@ -1,63 +1,63 @@
 package com.defistrategyarena.strategy.adapter.dsl;
 
+import com.defistrategyarena.shared.indicators.IndicatorId;
+import com.defistrategyarena.strategy.domain.CompareOperator;
 import com.defistrategyarena.strategy.domain.StrategyDefinition;
-import java.util.function.BiFunction;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 
-enum StrategyConditionFactory {
-    ;
+public final class StrategyConditionFactory {
 
-    static StrategyDefinition.Condition priceAbove(StrategyRuleWire body) {
-        return build(
-                new ConditionBuild(
-                        body,
-                        FieldPair.INSTRUMENT_THRESHOLD,
-                        (left, right) -> new StrategyDefinition.PriceAbove(left, right)));
+    private static final String UNKNOWN_CONDITION_TYPE = "unknown condition type";
+
+    private static final Map<String, Function<StrategyConditionWire, StrategyDefinition.Condition>>
+            NODES =
+                    Map.of(
+                            StrategyDslWireNames.CONDITION_AND, StrategyConditionFactory::andNode,
+                            StrategyDslWireNames.CONDITION_OR, StrategyConditionFactory::orNode,
+                            StrategyDslWireNames.CONDITION_PRICE_COMPARE,
+                                    StrategyConditionFactory::priceCompare,
+                            StrategyDslWireNames.CONDITION_INDICATOR_COMPARE,
+                                    StrategyConditionFactory::indicatorCompare);
+
+    private StrategyConditionFactory() {}
+
+    public static StrategyDefinition.Condition fromWire(StrategyConditionWire wire) {
+        Function<StrategyConditionWire, StrategyDefinition.Condition> mapper = NODES.get(wire.type());
+        if (mapper == null) {
+            throw new IllegalArgumentException(UNKNOWN_CONDITION_TYPE);
+        }
+        return mapper.apply(wire);
     }
 
-    static StrategyDefinition.Condition priceUnder(StrategyRuleWire body) {
-        return build(
-                new ConditionBuild(
-                        body,
-                        FieldPair.INSTRUMENT_THRESHOLD,
-                        (left, right) -> new StrategyDefinition.PriceUnder(left, right)));
+    private static StrategyDefinition.Condition andNode(StrategyConditionWire wire) {
+        return new StrategyDefinition.And(mapChildren(wire));
     }
 
-    static StrategyDefinition.Condition indicatorBelow(StrategyRuleWire body) {
-        return build(
-                new ConditionBuild(
-                        body,
-                        FieldPair.INDICATOR_THRESHOLD,
-                        (left, right) -> new StrategyDefinition.IndicatorBelow(left, right)));
+    private static StrategyDefinition.Condition orNode(StrategyConditionWire wire) {
+        return new StrategyDefinition.Or(mapChildren(wire));
     }
 
-    static StrategyDefinition.Condition indicatorAbove(StrategyRuleWire body) {
-        return build(
-                new ConditionBuild(
-                        body,
-                        FieldPair.INDICATOR_THRESHOLD,
-                        (left, right) -> new StrategyDefinition.IndicatorAbove(left, right)));
+    private static StrategyDefinition.Condition priceCompare(StrategyConditionWire wire) {
+        return new StrategyDefinition.PriceCompare(
+                wire.instrument(),
+                CompareOperator.fromWire(new CompareOperator.WireOperator(wire.operator())),
+                wire.threshold());
     }
 
-    private static StrategyDefinition.Condition build(ConditionBuild build) {
-        String left =
-                build.fields() == FieldPair.INSTRUMENT_THRESHOLD
-                        ? text(new StrategyWireText.TextValue(build.body().instrument()))
-                        : text(new StrategyWireText.TextValue(build.body().indicator()));
-        String right = text(new StrategyWireText.TextValue(build.body().threshold()));
-        return build.factory().apply(left, right);
+    private static StrategyDefinition.Condition indicatorCompare(StrategyConditionWire wire) {
+        return new StrategyDefinition.IndicatorCompare(
+                new IndicatorId(wire.indicator()),
+                wire.parameters(),
+                CompareOperator.fromWire(new CompareOperator.WireOperator(wire.operator())),
+                wire.threshold());
     }
 
-    private static String text(StrategyWireText.TextValue value) {
-        return StrategyWireText.orEmpty(value);
+    private static List<StrategyDefinition.Condition> mapChildren(StrategyConditionWire wire) {
+        List<StrategyDefinition.Condition> children = new ArrayList<>();
+        wire.children().forEach(child -> children.add(fromWire(child)));
+        return List.copyOf(children);
     }
-
-    private enum FieldPair {
-        INSTRUMENT_THRESHOLD,
-        INDICATOR_THRESHOLD
-    }
-
-    private record ConditionBuild(
-            StrategyRuleWire body,
-            FieldPair fields,
-            BiFunction<String, String, StrategyDefinition.Condition> factory) {}
 }

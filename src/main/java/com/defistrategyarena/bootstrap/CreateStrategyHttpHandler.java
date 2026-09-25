@@ -40,6 +40,7 @@ public final class CreateStrategyHttpHandler extends BaseHandler<AcceptedHttpRes
                 input.context().correlationId(),
                 input.context().ownerId(),
                 input.payload().name(),
+                input.payload().description(),
                 BootstrapRulePayloads.fromHttp(
                         new BootstrapRulePayloads.RuleBodies(input.payload().rules())));
     }

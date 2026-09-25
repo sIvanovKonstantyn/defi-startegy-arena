@@ -21,7 +21,7 @@ class StrategyUpdateDeleteHttpHandlerTest {
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String STRATEGY_ID = "abc";
     private static final String UPDATE_BODY =
-            "{\"rules\":[{\"id\":\"r2\",\"conditionType\":\"price_under\",\"actionType\":\"hold\",\"instrument\":\"ETH-USD\",\"indicator\":\"\",\"threshold\":\"2500\",\"allocationPercent\":\"\"}]}";
+            "{\"rules\":[{\"id\":\"r2\",\"when\":{\"type\":\"price_compare\",\"instrument\":\"ETH-USD\",\"operator\":\"lt\",\"threshold\":\"2500\"},\"then\":{\"type\":\"hold\"}}]}";
 
     @Test
     void update_without_auth_returns_unauthorized() {
